@@ -10,8 +10,6 @@ public class Organization {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
     private String name;
-
-    @OneToMany(mappedBy = "organization")
-    private Set<User> users;
 }

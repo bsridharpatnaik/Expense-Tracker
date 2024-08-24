@@ -1,6 +1,10 @@
 package com.gb.et.security.services;
 
+import com.gb.et.models.Organization;
+import com.gb.et.repository.OrganizationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -12,16 +16,29 @@ import com.gb.et.repository.UserRepository;
 
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
-  @Autowired
-  UserRepository userRepository;
 
-  @Override
-  @Transactional
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + username));
+    @Autowired
+    UserRepository userRepository;
 
-    return UserDetailsImpl.build(user);
-  }
+    @Autowired
+    OrganizationRepository orgRepository;
 
+    @Override
+    @Transactional
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + username));
+        return UserDetailsImpl.build(user);
+    }
+
+    public Organization getOrganizationForCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof UserDetails)) {
+            Organization o = orgRepository.findByName("anonymous");
+            return o;
+        }
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        User user = userRepository.findByUsername(userDetails.getUsername()).get();
+        return user.getOrganization();
+    }
 }

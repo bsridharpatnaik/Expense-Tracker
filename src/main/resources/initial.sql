@@ -1,3 +1,18 @@
+
+INSERT IGNORE INTO `expense_tracker`.`organization`
+(`id`,
+`name`)
+VALUES
+(1,
+'egcity');
+
+INSERT IGNORE INTO `expense_tracker`.`organization`
+(`id`,
+`name`)
+VALUES
+(2,
+'anonymous');
+
 INSERT INTO `expense_tracker`.`users`
 (`id`,
 `password`,
