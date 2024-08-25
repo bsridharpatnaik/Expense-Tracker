@@ -6,25 +6,29 @@ import org.springframework.stereotype.Service;
 @Service
 public class TransactionValidationService {
 
-    public void validateTransactionCreateDTO(TransactionCreateDTO dto) {
+    public void validateTransactionCreateDTO(TransactionCreateDTO dto) throws Exception {
         if (dto == null) {
-            throw new IllegalArgumentException("TransactionCreateDTO must not be null");
+            throw new Exception("TransactionCreateDTO must not be null");
+        }
+
+        if (dto.getTransactionType() == null) {
+            throw new Exception("TransactionCreate Type must not be null");
         }
 
         if (dto.getDate() == null) {
-            throw new IllegalArgumentException("Date must not be null");
+            throw new Exception("Date must not be null");
         }
 
         if (dto.getTitle() == null || dto.getTitle().isEmpty()) {
-            throw new IllegalArgumentException("Title must not be null or empty");
+            throw new Exception("Title must not be null or empty");
         }
 
         if (dto.getParty() == null || dto.getParty().isEmpty()) {
-            throw new IllegalArgumentException("Party must not be null or empty");
+            throw new Exception("Party must not be null or empty");
         }
 
         if (dto.getAmount() == null) {
-            throw new IllegalArgumentException("Amount must not be null");
+            throw new Exception("Amount must not be null");
         }
     }
 }

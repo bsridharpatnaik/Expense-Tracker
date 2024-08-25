@@ -33,12 +33,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     public Organization getOrganizationForCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof UserDetails)) {
-            Organization o = orgRepository.findByName("anonymous");
-            return o;
+        if (authentication != null && authentication.isAuthenticated() && !(authentication.getPrincipal() instanceof String)) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            User user = userRepository.findByUsername(userDetails.getUsername()).get();
+            return user.getOrganization();
         }
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        User user = userRepository.findByUsername(userDetails.getUsername()).get();
-        return user.getOrganization();
+        return orgRepository.findByName("anonymous");
     }
 }

@@ -43,5 +43,5 @@ public class Transaction {
     private List<FileInfo> fileInfos = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
-    private TransactionType type;
+    private TransactionType transactionType;
 }

@@ -23,7 +23,7 @@ public class TransactionService {
     @Autowired
     UserDetailsServiceImpl userDetailsService;
 
-    public Transaction createTransaction(TransactionCreateDTO payload) {
+    public Transaction createTransaction(TransactionCreateDTO payload) throws Exception {
         validationService.validateTransactionCreateDTO(payload);
         Transaction transaction = new Transaction();
         setFields(payload, transaction);
@@ -38,6 +38,7 @@ public class TransactionService {
         Organization o = userDetailsService.getOrganizationForCurrentUser();
         transaction.setOrganization(o);
         transaction.setFileInfos(payload.getFiles());
+        transaction.setTransactionType(payload.getTransactionType());
     }
 
     public Transaction updateTransaction(Long id, TransactionCreateDTO payload) throws Exception {
@@ -60,6 +61,9 @@ public class TransactionService {
         }
         if (payload.getFiles() != null) {
             existingTransaction.setFileInfos(payload.getFiles());
+        }
+        if (payload.getTransactionType() != null) {
+            existingTransaction.setTransactionType(payload.getTransactionType());
         }
         return transactionRepository.save(existingTransaction);
     }

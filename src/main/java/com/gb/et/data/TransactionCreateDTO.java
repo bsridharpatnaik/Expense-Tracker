@@ -2,6 +2,7 @@ package com.gb.et.data;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.gb.et.models.TransactionType;
 import com.gb.et.others.DoubleTwoDigitDecimalSerializer;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -20,4 +21,5 @@ public class TransactionCreateDTO {
     @JsonSerialize(using = DoubleTwoDigitDecimalSerializer.class)
     private Double amount;
     List<FileInfo> files;
+    TransactionType transactionType;
 }
