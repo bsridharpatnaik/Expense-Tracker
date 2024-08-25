@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.UUID;
 
 @Service
@@ -24,8 +25,8 @@ public class FileHandlingService {
         fileEntity.setFileUuid(fileUuid);
         fileEntity.setFilename(filename);
         fileEntity.setData(data);
-        fileRepository.save(fileEntity);
-        return new FileInfo(fileUuid, filename);
+        //fileRepository.save(fileEntity);
+        return new FileInfo(fileUuid, filename, new Date());
     }
 
     public byte[] downloadFile(UUID fileUuid) throws IOException {

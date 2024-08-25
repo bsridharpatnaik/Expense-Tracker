@@ -40,4 +40,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         }
         return orgRepository.findByName("anonymous");
     }
+
+    public String getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated() && !(authentication.getPrincipal() instanceof String)) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            User user = userRepository.findByUsername(userDetails.getUsername()).get();
+            return user.getUsername();
+        }
+        return "anonymous";
+    }
+
 }

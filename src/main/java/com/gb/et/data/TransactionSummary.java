@@ -16,13 +16,16 @@ public class TransactionSummary {
     private Double totalIncome;
     private Double totalExpense;
     private Double balance;
-
+    private  String username;
     // Constructors, Getters, and Setters
-    public TransactionSummary(Map<TransactionType, List<Transaction>> transactionsByType, Double carryForward, Double totalIncome, Double totalExpense, Double balance) {
+    public TransactionSummary(Map<TransactionType, List<Transaction>> transactionsByType,
+                              Double carryForward, Double totalIncome, Double totalExpense,
+                              Double balance, String username) {
         this.transactionsByType = transactionsByType;
         this.carryForward = carryForward;
         this.totalIncome = totalIncome;
         this.totalExpense = totalExpense;
         this.balance = balance;
+        this.username = username;
     }
 }
