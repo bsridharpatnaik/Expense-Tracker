@@ -1,6 +1,6 @@
 package com.gb.et.payload.request;
 
-import jakarta.validation.constraints.NotBlank;
+import javax.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data

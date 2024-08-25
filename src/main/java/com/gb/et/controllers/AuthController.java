@@ -6,8 +6,8 @@ import java.util.stream.Collectors;
 import com.gb.et.repository.UserRepository;
 import com.gb.et.security.jwt.JwtUtils;
 import com.gb.et.security.services.UserDetailsImpl;
-import jakarta.validation.Valid;
-
+import javax.validation.Valid;
+import javax.persistence.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;

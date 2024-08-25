@@ -60,10 +60,8 @@ public class DashboardService {
                 if (type == TransactionType.EXPENSE) totalExpense += t.getAmount();
             }
         }
-
         carryForward += transactionRepository.sumAmountByTypeBeforeDateAndOrganization(date, TransactionType.INCOME, organization) - transactionRepository.sumAmountByTypeBeforeDateAndOrganization(date, TransactionType.EXPENSE, organization);
         double balance = carryForward + totalIncome - totalExpense;
-
         return new TransactionSummary(transactionsByType, carryForward, totalIncome, totalExpense, balance);
     }
 }

@@ -1,6 +1,6 @@
 package com.gb.et.models;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 
 import java.util.Set;
 

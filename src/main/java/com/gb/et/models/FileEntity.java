@@ -1,8 +1,10 @@
 package com.gb.et.models;
 
 import java.util.UUID;
-import jakarta.persistence.*;
+
 import lombok.Data;
+
+import javax.persistence.*;
 
 @Entity
 @Table(name = "files")
