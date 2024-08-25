@@ -1,6 +1,7 @@
 package com.gb.et.security.services;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -38,7 +39,7 @@ public class UserDetailsImpl implements UserDetails, Serializable {
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return null;
+    return Collections.emptyList();
   }
 
   @Override
