@@ -1,6 +1,7 @@
 com/gb/et/security/jwt/JwtUtils.class
 com/gb/et/service/TransactionValidationService.class
 com/gb/et/others/DoubleTwoDigitDecimalSerializer.class
+com/gb/et/controllers/DocumentVaultController.class
 com/gb/et/controllers/TransactionController.class
 com/gb/et/security/jwt/AuthEntryPointJwt.class
 com/gb/et/payload/response/JwtResponse.class
@@ -17,6 +18,7 @@ com/gb/et/repository/FileRepository.class
 com/gb/et/service/FileHandlingService.class
 com/gb/et/models/Transaction.class
 com/gb/et/service/TransactionService.class
+com/gb/et/service/VaultService.class
 com/gb/et/security/jwt/AuthTokenFilter.class
 com/gb/et/security/services/UserDetailsServiceImpl.class
 com/gb/et/repository/UserRepository.class
@@ -28,6 +30,7 @@ com/gb/et/payload/request/LoginRequest.class
 com/gb/et/data/FileInfo.class
 com/gb/et/payload/response/MessageResponse.class
 com/gb/et/controllers/AuthController.class
+com/gb/et/models/DocumentVault.class
 com/gb/et/data/FileInformationDAO.class
 com/gb/et/models/Organization.class
 com/gb/et/controllers/GlobalExceptionHandler.class
