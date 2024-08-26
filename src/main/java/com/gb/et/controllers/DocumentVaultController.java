@@ -40,12 +40,12 @@ public class DocumentVaultController {
     }
 
     @PatchMapping("/remove")
-    public ResponseEntity<DocumentVault> removeFileInfoFromVault(@RequestParam UUID fileUuid) {
+    public ResponseEntity<DocumentVault> removeFileInfoFromVault(@RequestBody FileInfo fileInfo) {
         DocumentVault vault = vaults.get(1L);
         if (vault == null) {
             return ResponseEntity.notFound().build();
         }
-        vault.getFiles().removeIf(file -> file.getFileUuid().equals(fileUuid));
+        vault.getFiles().removeIf(file -> file.getFileUuid().equals(fileInfo.getFileUuid()));
         return ResponseEntity.ok(vault);
     }
 

@@ -33,4 +33,9 @@ public class TransactionController {
             @RequestBody TransactionCreateDTO payload) throws Exception {  // Extract request body as DTO
         return transactionService.updateTransaction(id, payload);
     }
+
+    @GetMapping("/party")
+    public List<String> getExistingParty() throws Exception {
+        return transactionService.getParty();
+    }
 }

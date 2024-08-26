@@ -20,6 +20,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE FUNCTION('DATE', t.date) < FUNCTION('DATE', :date) AND t.transactionType = :type AND t.organization = :organization")
     Double sumAmountByTypeBeforeDateAndOrganization(@Param("date") Date date, @Param("type") TransactionType type, @Param("organization") Organization organization);
 
+    @Query("SELECT DISTINCT t.party FROM Transaction t WHERE t.organization = :organization")
+    List<String> findDistinctPartiesByOrganization(Organization organization);
+
     @Query("SELECT t FROM Transaction t WHERE FUNCTION('MONTH', t.date) = FUNCTION('MONTH', :date) AND FUNCTION('YEAR', t.date) = FUNCTION('YEAR', :date) AND t.transactionType = :type AND t.organization = :organization")
     List<Transaction> findByMonthAndTransactionTypeAndOrganization(@Param("date") Date date, @Param("type") TransactionType type, @Param("organization") Organization organization);
 }

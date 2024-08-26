@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PostMapping;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -66,5 +67,9 @@ public class TransactionService {
             existingTransaction.setTransactionType(payload.getTransactionType());
         }
         return transactionRepository.save(existingTransaction);
+    }
+
+    public List<String> getParty() {
+        return transactionRepository.findDistinctPartiesByOrganization(userDetailsService.getOrganizationForCurrentUser());
     }
 }
