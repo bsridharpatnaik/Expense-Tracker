@@ -13,7 +13,7 @@ public class FileEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    private UUID fileUuid;
+    private String fileUuid;
     private String filename;
 
     @Lob
