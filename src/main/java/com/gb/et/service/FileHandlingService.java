@@ -4,6 +4,7 @@ import com.gb.et.data.FileDownloadInfo;
 import com.gb.et.data.FileInfo;
 import com.gb.et.models.FileEntity;
 import com.gb.et.repository.FileRepository;
+import com.gb.et.security.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +20,9 @@ public class FileHandlingService {
     @Autowired
     private FileRepository fileRepository;
 
+    @Autowired
+    UserDetailsServiceImpl userDetailsService;
+
     public FileInfo uploadFile(MultipartFile file) throws IOException {
         String filename = file.getOriginalFilename();
         byte[] data = file.getBytes();
@@ -27,8 +31,10 @@ public class FileHandlingService {
         fileEntity.setFileUuid(fileUuid.toString());
         fileEntity.setFilename(filename);
         fileEntity.setData(data);
+        fileEntity.setOrganization(userDetailsService.getOrganizationForCurrentUser());
+        fileEntity.setUploadDate(new Date());
         fileRepository.save(fileEntity);
-        return new FileInfo(fileUuid, filename, new Date());
+        return new FileInfo(fileEntity);
     }
 
     public FileDownloadInfo downloadFile(String fileUuid) throws IOException {
@@ -36,7 +42,10 @@ public class FileHandlingService {
         if (fileEntity == null) {
             throw new IOException("File not found");
         }
-        // Return a custom object containing both the file data and the original filename
+
+        if (!userDetailsService.getOrganizationForCurrentUser().equals(fileEntity.getOrganization()))
+            throw new IOException("User not allowed to download file");
+
         return new FileDownloadInfo(fileEntity.getFilename(), fileEntity.getData());
     }
 }

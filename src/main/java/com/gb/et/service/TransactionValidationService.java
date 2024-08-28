@@ -1,10 +1,21 @@
 package com.gb.et.service;
 
+import com.gb.et.data.FileInfo;
 import com.gb.et.data.TransactionCreateDTO;
+import com.gb.et.models.FileEntity;
+import com.gb.et.repository.FileRepository;
+import com.gb.et.security.services.UserDetailsServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class TransactionValidationService {
+
+    @Autowired
+    UserDetailsServiceImpl userDetailsService;
+
+    @Autowired
+    FileRepository fileRepository;
 
     public void validateTransactionCreateDTO(TransactionCreateDTO dto) throws Exception {
         if (dto == null) {
@@ -29,6 +40,7 @@ public class TransactionValidationService {
 
         if (dto.getAmount() == null) {
             throw new Exception("Amount must not be null");
+
         }
     }
 }

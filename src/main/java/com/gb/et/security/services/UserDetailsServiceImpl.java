@@ -38,7 +38,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             User user = userRepository.findByUsername(userDetails.getUsername()).get();
             return user.getOrganization();
         }
-        return orgRepository.findByName("anonymous");
+        return orgRepository.findByName("anonymous").get();
     }
 
     public String getCurrentUser() {
@@ -50,5 +50,4 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         }
         return "anonymous";
     }
-
 }

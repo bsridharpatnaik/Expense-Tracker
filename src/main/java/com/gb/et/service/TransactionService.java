@@ -1,16 +1,22 @@
 package com.gb.et.service;
 
+import com.gb.et.data.FileInfo;
 import com.gb.et.data.TransactionCreateDTO;
+import com.gb.et.models.FileEntity;
 import com.gb.et.models.Organization;
 import com.gb.et.models.Transaction;
+import com.gb.et.repository.FileRepository;
 import com.gb.et.repository.TransactionRepository;
 import com.gb.et.security.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PostMapping;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.ArrayList;
 
 @Service
 public class TransactionService {
@@ -24,6 +30,9 @@ public class TransactionService {
     @Autowired
     UserDetailsServiceImpl userDetailsService;
 
+    @Autowired
+    FileRepository fileRepository;
+
     public Transaction createTransaction(TransactionCreateDTO payload) throws Exception {
         validationService.validateTransactionCreateDTO(payload);
         Transaction transaction = new Transaction();
@@ -31,16 +40,18 @@ public class TransactionService {
         return transactionRepository.save(transaction);
     }
 
-    private void setFields(TransactionCreateDTO payload, Transaction transaction) {
+    private void setFields(TransactionCreateDTO payload, Transaction transaction) throws Exception {
         transaction.setAmount(payload.getAmount());
         transaction.setDate(payload.getDate());
         transaction.setParty(payload.getParty());
         transaction.setTitle(payload.getTitle());
-        Organization o = userDetailsService.getOrganizationForCurrentUser();
-        transaction.setOrganization(o);
-        transaction.setFileInfos(payload.getFiles());
+        transaction.setOrganization(userDetailsService.getOrganizationForCurrentUser());
+        transaction.setFileUuids(getUUIDListFromFileInfo(payload.getFiles()));
         transaction.setTransactionType(payload.getTransactionType());
+        transaction.setCreationDate(new Date());
+        transaction.setModificationDate(new Date());
     }
+
 
     public Transaction updateTransaction(Long id, TransactionCreateDTO payload) throws Exception {
         // Fetch the existing transaction from the database
@@ -61,12 +72,27 @@ public class TransactionService {
             existingTransaction.setAmount(payload.getAmount());
         }
         if (payload.getFiles() != null) {
-            existingTransaction.setFileInfos(payload.getFiles());
+            List<UUID> uuidList = getUUIDListFromFileInfo(payload.getFiles());
+            existingTransaction.setFileUuids(uuidList);
         }
         if (payload.getTransactionType() != null) {
             existingTransaction.setTransactionType(payload.getTransactionType());
         }
+        existingTransaction.setModificationDate(new Date());
         return transactionRepository.save(existingTransaction);
+    }
+
+    private List<UUID> getUUIDListFromFileInfo(List<FileInfo> fileList) throws Exception {
+        List<UUID> uuidList = new ArrayList<UUID>();
+        for (FileInfo fileInfo : fileList) {
+            FileEntity fileEntity = fileRepository.findByFileUuid(fileInfo.getFileUuid().toString());
+            if (fileEntity == null)
+                throw new Exception("File not found with UUID - " + fileInfo.getFileUuid().toString());
+            if (!fileEntity.getOrganization().equals(userDetailsService.getOrganizationForCurrentUser()))
+                throw new Exception("User not allowed to access this file!");
+            uuidList.add(UUID.fromString(fileEntity.getFileUuid()));
+        }
+        return uuidList;
     }
 
     public List<String> getParty() {

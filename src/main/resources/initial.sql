@@ -1,4 +1,8 @@
 
+drop database expense_tracker;
+create database expense_tracker;
+
+
 INSERT IGNORE INTO `expense_tracker`.`organization`
 (`id`,
 `name`)

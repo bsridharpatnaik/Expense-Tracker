@@ -1,5 +1,6 @@
 package com.gb.et.controllers;
 
+import com.gb.et.data.ErrorResponse;
 import com.gb.et.data.TransactionCreateDTO;
 import com.gb.et.models.Transaction;
 import com.gb.et.service.TransactionService;
@@ -18,12 +19,13 @@ public class TransactionController {
     TransactionService transactionService;
 
     @PostMapping
-    public ResponseEntity<Transaction> createTransaction(@RequestBody TransactionCreateDTO payload) {
+    public ResponseEntity<?> createTransaction(@RequestBody TransactionCreateDTO payload) {
         try {
             Transaction newTransaction = transactionService.createTransaction(payload);
             return new ResponseEntity<>(newTransaction, HttpStatus.CREATED);  // Return 201 status code
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            ErrorResponse errorResponse = new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);  // Return 500 with error details
         }
     }
 
