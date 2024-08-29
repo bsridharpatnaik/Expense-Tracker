@@ -1,5 +1,6 @@
 package com.gb.et.data;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.gb.et.others.DoubleTwoDigitDecimalSerializer;
 import lombok.Data;
@@ -17,16 +18,18 @@ public class FolderContentsResponse {
     private List<FolderSummary> subFolders;
     private List<FileSummary> files;
     private List<FolderPathDto> breadcrumb;
+    private String username;
 
     // Constructor
     public FolderContentsResponse(Long id, String name, Long parentFolderId,
-                                  List<FolderSummary> subFolders, List<FileSummary> files, List<FolderPathDto> breadcrumb) {
+                                  List<FolderSummary> subFolders, List<FileSummary> files, List<FolderPathDto> breadcrumb, String username) {
         this.id = id;
         this.name = name;
         this.parentFolderId = parentFolderId;
         this.subFolders = subFolders;
         this.files = files;
         this.breadcrumb = breadcrumb;
+        this.username = username;
     }
 
     // Getters and Setters
@@ -68,6 +71,7 @@ public class FolderContentsResponse {
         private Long id;
         private String name;
         private int itemCount;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
         private Date lastUpdateDate;
 
         // Constructor
@@ -113,15 +117,28 @@ public class FolderContentsResponse {
         private String filename;
         @JsonSerialize(using = DoubleTwoDigitDecimalSerializer.class)
         private double sizeMB;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
+        Date lastUpdateDate;
+
 
         // Constructor
-        public FileSummary(Long id, String filename, double sizeMB) {
+        public FileSummary(Long id, String filename, double sizeMB, Date lastUpdateDate) {
             this.id = id;
             this.filename = filename;
             this.sizeMB = sizeMB;
+            this.lastUpdateDate = lastUpdateDate;
         }
 
         // Getters and Setters
+
+        public Date getLastUpdateDate() {
+            return lastUpdateDate;
+        }
+
+        public void setLastUpdateDate(Date lastUpdateDate) {
+            this.lastUpdateDate = lastUpdateDate;
+        }
+
         public double getSizeMB() {
             return sizeMB;
         }

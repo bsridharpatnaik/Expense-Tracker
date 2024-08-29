@@ -51,7 +51,8 @@ public class FolderService {
                 .map(file -> new FolderContentsResponse.FileSummary(
                         file.getId(),
                         file.getFilename(),
-                        FileSizeUtil.getFileSizeInMB(file.getData())))  // Calculate file size in MB
+                        FileSizeUtil.getFileSizeInMB(file.getData()),
+                        file.getUploadDate()))  // Calculate file size in MB
                 .collect(Collectors.toList());
 
         // Return folder contents along with breadcrumb path
@@ -61,7 +62,8 @@ public class FolderService {
                 (folder.getParentFolder() != null) ? folder.getParentFolder().getId() : null,
                 subFolders,
                 files,
-                breadcrumb  // Include breadcrumb path
+                breadcrumb,
+                userDetailsService.getCurrentUser()// Include breadcrumb path
         );
     }
 
