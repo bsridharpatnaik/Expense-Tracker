@@ -9,6 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface VaultFileRepository extends JpaRepository<FileEntityForVault, Long> {
-    Optional<FileEntityForVault> findByFileUuid(String fileUuid);
+    //Optional<FileEntityForVault> findByFileUuid(String fileUuid);
     boolean existsByFilenameAndFolder(String filename, FolderEntity folder);
 }

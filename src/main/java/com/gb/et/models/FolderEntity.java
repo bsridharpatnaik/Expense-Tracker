@@ -48,5 +48,14 @@ public class FolderEntity {
         }
         return fullPath.toString();
     }
+
+    // Method to count items in a folder
+    public int getItemCount() {
+        int itemCount = files.size();  // Count files
+        for (FolderEntity subFolder : subFolders) {
+            itemCount += 1 + subFolder.getItemCount();  // Count subfolders and their items
+        }
+        return itemCount;
+    }
 }
 

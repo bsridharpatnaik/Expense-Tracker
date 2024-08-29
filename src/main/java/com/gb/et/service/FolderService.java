@@ -1,13 +1,8 @@
 package com.gb.et.service;
 
-import com.gb.et.data.FileStorageException;
-import com.gb.et.data.FolderContentsResponse;
-import com.gb.et.data.InvalidOperationException;
-import com.gb.et.data.ResourceNotFoundException;
-import com.gb.et.models.FileEntityForVault;
-import com.gb.et.models.FolderEntity;
-import com.gb.et.models.Organization;
-import com.gb.et.models.User;
+import com.gb.et.data.*;
+import com.gb.et.models.*;
+import com.gb.et.others.FileSizeUtil;
 import com.gb.et.repository.FolderRepository;
 import com.gb.et.repository.VaultFileRepository;
 import com.gb.et.security.services.UserDetailsServiceImpl;
@@ -15,12 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,20 +28,38 @@ public class FolderService {
     public FolderContentsResponse getFolderContentsWithSummary(Long folderId) {
         FolderEntity folder = (folderId == null) ? getOrCreateRootFolderWithContents() : getFolderContents(folderId);
 
+        // Generate breadcrumb path
+        List<FolderPathDto> breadcrumb = new ArrayList<>();
+        FolderEntity currentFolder = folder;
+        while (currentFolder != null) {
+            breadcrumb.add(0, new FolderPathDto(currentFolder.getId(), currentFolder.getName()));
+            currentFolder = currentFolder.getParentFolder();
+        }
+
+        // Map subfolders with item counts
         List<FolderContentsResponse.FolderSummary> subFolders = folder.getSubFolders().stream()
-                .map(subFolder -> new FolderContentsResponse.FolderSummary(subFolder.getId(), subFolder.getName()))
+                .map(subFolder -> new FolderContentsResponse.FolderSummary(
+                        subFolder.getId(),
+                        subFolder.getName(),
+                        subFolder.getItemCount()))  // Calculate item count
                 .collect(Collectors.toList());
 
+        // Map files with sizes in MB
         List<FolderContentsResponse.FileSummary> files = folder.getFiles().stream()
-                .map(file -> new FolderContentsResponse.FileSummary(file.getId(), file.getFilename()))
+                .map(file -> new FolderContentsResponse.FileSummary(
+                        file.getId(),
+                        file.getFilename(),
+                        FileSizeUtil.getFileSizeInMB(file.getData())))  // Calculate file size in MB
                 .collect(Collectors.toList());
 
+        // Return folder contents along with breadcrumb path
         return new FolderContentsResponse(
                 folder.getId(),
                 folder.getName(),
                 (folder.getParentFolder() != null) ? folder.getParentFolder().getId() : null,
                 subFolders,
-                files
+                files,
+                breadcrumb  // Include breadcrumb path
         );
     }
 
@@ -126,10 +134,8 @@ public class FolderService {
         file.setOrganization(organization);
         file.setFolder(folder);
         file.setUploadDate(new Date());
-
         return fileRepository.save(file);
     }
-
 
     // Retrieve folder contents
     public FolderEntity getFolderContents(Long folderId) {
@@ -137,25 +143,55 @@ public class FolderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Folder not found with ID: " + folderId));
     }
 
-    // Retrieve the root folder of an organization
-    public FolderEntity getRootFolder() {
-        Organization organization = userDetailsService.getOrganizationForCurrentUser();
-        return folderRepository.findRootFolderByOrganizationId(organization.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Root folder not found for organization: " + organization.getName()));
-    }
-
-    // Retrieve a file by its UUID
-    public FileEntityForVault getFileByUuid(String fileUuid) {
-        FileEntityForVault file = fileRepository.findByFileUuid(fileUuid)
-                .orElseThrow(() -> new ResourceNotFoundException("File not found with UUID: " + fileUuid));
-
+    // Retrieve a file by its id
+    public FileEntityForVault getFileById(Long id) {
+        FileEntityForVault file = fileRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
         Organization currentUserOrganization = userDetailsService.getOrganizationForCurrentUser();
-
         if (!file.getOrganization().getId().equals(currentUserOrganization.getId())) {
             throw new AccessDeniedException("You do not have permission to access this file.");
         }
-
         return file;
+    }
+
+    /**
+     * Delete a file by its UUID.
+     *
+     * @param FileId the id of the file to delete
+     */
+    public void deleteFile(Long id) {
+        FileEntityForVault file = fileRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
+        fileRepository.delete(file);
+    }
+
+    public void deleteFolder(Long folderId) {
+        FolderEntity folder = folderRepository.findById(folderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Folder not found with ID: " + folderId));
+
+        // Recursively delete all subfolders and files
+        deleteFolderRecursive(folder);
+
+        // Finally, delete the folder itself
+        folderRepository.delete(folder);
+    }
+
+    /**
+     * Recursively delete all subfolders and files within a folder.
+     *
+     * @param folder the folder to delete recursively
+     */
+    private void deleteFolderRecursive(FolderEntity folder) {
+        // Delete all files in the folder
+        for (FileEntityForVault file : folder.getFiles()) {
+            fileRepository.delete(file);
+        }
+
+        // Recursively delete all subfolders
+        for (FolderEntity subFolder : folder.getSubFolders()) {
+            deleteFolderRecursive(subFolder);
+            folderRepository.delete(subFolder);
+        }
     }
 }
 

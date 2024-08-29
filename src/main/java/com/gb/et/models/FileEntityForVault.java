@@ -15,7 +15,6 @@ public class FileEntityForVault {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    private String fileUuid;
     private String filename;
 
     @Lob
