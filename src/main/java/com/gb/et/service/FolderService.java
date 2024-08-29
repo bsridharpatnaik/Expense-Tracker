@@ -110,7 +110,7 @@ public class FolderService {
     }
 
     // Upload a file into a folder or the root folder if folderId is null
-    public FileEntityForVault uploadFile(String filename, byte[] data, Long folderId) {
+    public FileUploadResponse uploadFile(String filename, byte[] data, Long folderId) {
         Organization organization = userDetailsService.getOrganizationForCurrentUser();
 
         FolderEntity folder;
@@ -138,7 +138,13 @@ public class FolderService {
         file.setOrganization(organization);
         file.setFolder(folder);
         file.setUploadDate(new Date());
-        return fileRepository.save(file);
+        fileRepository.save(file);
+        return new FileUploadResponse(
+                file.getFilename(),
+                file.getUploadDate(),
+                file.getFolder().getId(),
+                file.getId(),
+                FileSizeUtil.getFileSizeInMB(file.getData()));
     }
 
     // Retrieve folder contents

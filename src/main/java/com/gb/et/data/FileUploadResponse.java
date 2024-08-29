@@ -1,6 +1,8 @@
 package com.gb.et.data;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.gb.et.others.DoubleTwoDigitDecimalSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,5 +19,7 @@ public class FileUploadResponse {
     private Date uploadDate;
     private Long folderId;
     private Long id;
+    @JsonSerialize(using = DoubleTwoDigitDecimalSerializer.class)
+    private double sizeMB;
 }
 

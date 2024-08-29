@@ -29,18 +29,7 @@ public class VaultController {
     @PostMapping("/files")
     public ResponseEntity<FileUploadResponse> uploadFile(@RequestParam("file") MultipartFile file, @RequestParam Long folderId) {
         try {
-            String filename = file.getOriginalFilename();
-            FileEntityForVault uploadedFile = folderService.uploadFile(filename, file.getBytes(), folderId);
-
-            // Create and return a response DTO with only the necessary fields
-            FileUploadResponse response = new FileUploadResponse(
-                    uploadedFile.getFilename(),
-                    uploadedFile.getUploadDate(),
-                    uploadedFile.getFolder().getId(),
-                    uploadedFile.getId()
-            );
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(folderService.uploadFile(file.getOriginalFilename(), file.getBytes(), folderId));
         } catch (IOException ex) {
             throw new FileStorageException("Failed to upload file: " + ex.getMessage());
         }
@@ -63,25 +52,13 @@ public class VaultController {
                 .header("Content-Type", "application/octet-stream")
                 .body(file.getData());
     }
-
-    /**
-     * API to delete a file by its id.
-     *
-     * @param fileId the id of the file to delete
-     * @return ResponseEntity indicating the result of the operation
-     */
+    
     @DeleteMapping("/files/{id}")
     public ResponseEntity<Void> deleteFile(@PathVariable Long id) {
         folderService.deleteFile(id);
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * API to delete a folder by its ID, including all its subfolders and files.
-     *
-     * @param folderId the ID of the folder to delete
-     * @return ResponseEntity indicating the result of the operation
-     */
     @DeleteMapping("/folders/{folderId}")
     public ResponseEntity<Void> deleteFolder(@PathVariable Long folderId) {
         folderService.deleteFolder(folderId);
