@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.gb.et.others.DoubleTwoDigitDecimalSerializer;
 import lombok.Data;
 
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -67,15 +68,26 @@ public class FolderContentsResponse {
         private Long id;
         private String name;
         private int itemCount;
+        private Date lastUpdateDate;
 
         // Constructor
-        public FolderSummary(Long id, String name, int itemCount) {
+        public FolderSummary(Long id, String name, int itemCount, Date lastUpdateDate) {
             this.id = id;
             this.name = name;
             this.itemCount = itemCount;
+            this.lastUpdateDate = lastUpdateDate;
         }
 
         // Getters and Setters
+
+
+        public Date getLastUpdateDate() {
+            return lastUpdateDate;
+        }
+
+        public void setLastUpdateDate(Date lastUpdateDate) {
+            this.lastUpdateDate = lastUpdateDate;
+        }
 
         public int getItemCount() {
             return itemCount;

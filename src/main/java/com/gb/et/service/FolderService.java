@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class FolderService {
@@ -41,7 +42,8 @@ public class FolderService {
                 .map(subFolder -> new FolderContentsResponse.FolderSummary(
                         subFolder.getId(),
                         subFolder.getName(),
-                        subFolder.getItemCount()))  // Calculate item count
+                        subFolder.getItemCount(),
+                        getLastUpdateDate(subFolder)))  // Calculate item count
                 .collect(Collectors.toList());
 
         // Map files with sizes in MB
@@ -192,6 +194,26 @@ public class FolderService {
             deleteFolderRecursive(subFolder);
             folderRepository.delete(subFolder);
         }
+    }
+
+    public Date getLastUpdateDate(FolderEntity folder) {
+        // Get the most recent file update date in the current folder
+        Optional<Date> lastFileUpdate = folder.getFiles().stream()
+                .map(FileEntityForVault::getUploadDate)
+                .max(Comparator.naturalOrder());
+
+        // Get the most recent update date from the subfolders recursively
+        Optional<Date> lastSubfolderUpdate = folder.getSubFolders().stream()
+                .map(this::getLastUpdateDate)
+                .filter(Objects::nonNull)
+                .max(Comparator.naturalOrder());
+
+        // Combine the two Optional<Date> results
+        return Stream.of(lastFileUpdate, lastSubfolderUpdate)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .max(Comparator.naturalOrder())
+                .orElse(null);
     }
 }
 

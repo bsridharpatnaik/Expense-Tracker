@@ -36,7 +36,8 @@ public class VaultController {
             FileUploadResponse response = new FileUploadResponse(
                     uploadedFile.getFilename(),
                     uploadedFile.getUploadDate(),
-                    uploadedFile.getFolder().getId()
+                    uploadedFile.getFolder().getId(),
+                    uploadedFile.getId()
             );
 
             return ResponseEntity.ok(response);
