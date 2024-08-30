@@ -2,7 +2,8 @@
 
 ## Overview
 
-The Expense Tracker Application is a **Progressive Web App (PWA)** designed to help users manage and track their daily and monthly expenses. This application supports both anonymous users and logged-in users, with varying data visibility based on user authentication.
+The Expense/Income Tracker and Document Vault Application is a **Progressive Web App (PWA)** designed to help users manage and track their daily and monthly expenses. This application supports both anonymous users and logged-in users, with varying data visibility based on user authentication.
+This can be used to track business owners their cash expenses without storing any data on device.
 
 ## Key Features
 
