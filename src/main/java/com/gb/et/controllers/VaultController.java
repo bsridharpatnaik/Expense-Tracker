@@ -52,7 +52,7 @@ public class VaultController {
                 .header("Content-Type", "application/octet-stream")
                 .body(file.getData());
     }
-    
+
     @DeleteMapping("/files/{id}")
     public ResponseEntity<Void> deleteFile(@PathVariable Long id) {
         folderService.deleteFile(id);

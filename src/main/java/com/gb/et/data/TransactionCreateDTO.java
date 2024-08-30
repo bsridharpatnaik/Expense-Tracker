@@ -14,7 +14,7 @@ import java.util.List;
 @Data
 public class TransactionCreateDTO {
     private Long id;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy", timezone = "Asia/Kolkata")
     private Date date;
     private String title;
     private String party;
