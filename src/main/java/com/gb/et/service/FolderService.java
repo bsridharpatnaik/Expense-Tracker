@@ -4,11 +4,13 @@ import com.gb.et.data.*;
 import com.gb.et.models.*;
 import com.gb.et.others.FileSizeUtil;
 import com.gb.et.repository.FolderRepository;
+import com.gb.et.repository.HistoryRepo;
 import com.gb.et.repository.VaultFileRepository;
 import com.gb.et.security.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,6 +27,9 @@ public class FolderService {
 
     @Autowired
     UserDetailsServiceImpl userDetailsService;
+
+    @Autowired
+    HistoryRepo historyRepo;
 
     public FolderContentsResponse getFolderContentsWithSummary(Long folderId) {
         FolderEntity folder = (folderId == null) ? getOrCreateRootFolderWithContents() : getFolderContents(folderId);
@@ -110,6 +115,7 @@ public class FolderService {
     }
 
     // Upload a file into a folder or the root folder if folderId is null
+    @Transactional
     public FileUploadResponse uploadFile(String filename, byte[] data, Long folderId) {
         Organization organization = userDetailsService.getOrganizationForCurrentUser();
 
@@ -139,6 +145,7 @@ public class FolderService {
         file.setFolder(folder);
         file.setUploadDate(new Date());
         fileRepository.save(file);
+        historyRepo.save(new History(file));
         return new FileUploadResponse(
                 file.getFilename(),
                 file.getUploadDate(),

@@ -3,10 +3,13 @@ package com.gb.et.service;
 import com.gb.et.data.FileDownloadInfo;
 import com.gb.et.data.FileInfo;
 import com.gb.et.models.FileEntity;
+import com.gb.et.models.History;
 import com.gb.et.repository.FileRepository;
+import com.gb.et.repository.HistoryRepo;
 import com.gb.et.security.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -23,6 +26,10 @@ public class FileHandlingService {
     @Autowired
     UserDetailsServiceImpl userDetailsService;
 
+    @Autowired
+    HistoryRepo historyRepo;
+
+    @Transactional
     public FileInfo uploadFile(MultipartFile file) throws IOException {
         String filename = file.getOriginalFilename();
         byte[] data = file.getBytes();
