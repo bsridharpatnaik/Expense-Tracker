@@ -1,15 +1,19 @@
 package com.gb.et.service;
 
 import com.gb.et.data.FileInfo;
+import com.gb.et.data.HistoryTypeEnum;
 import com.gb.et.data.TransactionCreateDTO;
 import com.gb.et.models.FileEntity;
+import com.gb.et.models.History;
 import com.gb.et.models.Organization;
 import com.gb.et.models.Transaction;
 import com.gb.et.repository.FileRepository;
+import com.gb.et.repository.HistoryRepo;
 import com.gb.et.repository.TransactionRepository;
 import com.gb.et.security.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import java.util.Date;
@@ -33,11 +37,17 @@ public class TransactionService {
     @Autowired
     FileRepository fileRepository;
 
+    @Autowired
+    HistoryRepo historyRepository;
+
+    @Transactional
     public Transaction createTransaction(TransactionCreateDTO payload) throws Exception {
         validationService.validateTransactionCreateDTO(payload);
         Transaction transaction = new Transaction();
         setFields(payload, transaction);
-        return transactionRepository.save(transaction);
+        transactionRepository.save(transaction);
+        historyRepository.save(new History(transaction));
+        return transaction;
     }
 
     private void setFields(TransactionCreateDTO payload, Transaction transaction) throws Exception {
@@ -53,6 +63,7 @@ public class TransactionService {
     }
 
 
+    @Transactional
     public Transaction updateTransaction(Long id, TransactionCreateDTO payload) throws Exception {
         // Fetch the existing transaction from the database
         Transaction existingTransaction = transactionRepository.findById(id)
@@ -79,7 +90,9 @@ public class TransactionService {
             existingTransaction.setTransactionType(payload.getTransactionType());
         }
         existingTransaction.setModificationDate(new Date());
-        return transactionRepository.save(existingTransaction);
+        transactionRepository.save(existingTransaction);
+        historyRepository.save(new History(existingTransaction));
+        return existingTransaction;
     }
 
     private List<UUID> getUUIDListFromFileInfo(List<FileInfo> fileList) throws Exception {
@@ -97,5 +110,14 @@ public class TransactionService {
 
     public List<String> getParty() {
         return transactionRepository.findDistinctPartiesByOrganization(userDetailsService.getOrganizationForCurrentUser());
+    }
+
+    @Transactional
+    public void deleteTransaction(Long id) throws Exception {
+        Transaction existingTransaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new Exception("Transaction not found with id: " + id));
+
+        historyRepository.save(new History(existingTransaction, "Deleted"));
+        transactionRepository.deleteById(id);
     }
 }

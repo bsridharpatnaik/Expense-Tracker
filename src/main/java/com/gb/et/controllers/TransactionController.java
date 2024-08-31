@@ -36,6 +36,12 @@ public class TransactionController {
         return transactionService.updateTransaction(id, payload);
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTransaction(@PathVariable Long id) throws Exception {
+        transactionService.deleteTransaction(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/party")
     public List<String> getExistingParty() throws Exception {
         return transactionService.getParty();
