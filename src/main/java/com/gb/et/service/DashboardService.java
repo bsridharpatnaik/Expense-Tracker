@@ -8,6 +8,7 @@ import com.gb.et.repository.TransactionRepository;
 import com.gb.et.repository.UserRepository;
 import com.gb.et.security.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -45,13 +46,14 @@ public class DashboardService {
     }
 
     private TransactionSummary getSummary(Date date, boolean isDaily, Organization organization) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "creationDate");
         Map<TransactionType, List<Transaction>> transactionsByType = new EnumMap<>(TransactionType.class);
         double carryForward = 0.0, totalIncome = 0.0, totalExpense = 0.0;
 
         for (TransactionType type : TransactionType.values()) {
             List<Transaction> transactions = isDaily ?
-                    transactionRepository.findByDateAndTransactionTypeAndOrganization(date, type, organization) :
-                    transactionRepository.findByMonthAndTransactionTypeAndOrganization(date, type, organization);
+                    transactionRepository.findByDateAndTransactionTypeAndOrganization(date, type, organization, sort) :
+                    transactionRepository.findByMonthAndTransactionTypeAndOrganization(date, type, organization, sort);
 
             transactionsByType.put(type, transactions);
 
