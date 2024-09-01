@@ -47,7 +47,7 @@ public class DashboardService {
 
     private TransactionSummary getSummary(Date date, boolean isDaily, Organization organization) {
         Sort sort = Sort.by(Sort.Direction.DESC, "creationDate");
-        Map<TransactionType, List<Transaction>> transactionsByType = new EnumMap<>(TransactionType.class);
+            Map<TransactionType, List<Transaction>> transactionsByType = new EnumMap<>(TransactionType.class);
         double carryForward = 0.0, totalIncome = 0.0, totalExpense = 0.0;
 
         for (TransactionType type : TransactionType.values()) {

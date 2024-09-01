@@ -26,7 +26,8 @@ public class RequestLoggingFilter implements Filter {
 
         // Check if the URI matches the excluded API path
         String requestURI = httpServletRequest.getRequestURI();
-        if ("/api/vault/files".equals(requestURI) || "/api/file/upload".equals(requestURI)) {
+        if(requestURI.contains("/file")){
+        //if ("/api/vault/files".equals(requestURI) || "/api/file/upload".equals(requestURI)) {
             // Skip logging and continue the filter chain
             chain.doFilter(request, response);
             return;
