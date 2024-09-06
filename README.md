@@ -44,7 +44,7 @@ This can be used to track business owners their cash expenses without storing an
 - **Allows users to keep track of changes and modifications made over time.**
 
 ## Installation
-The application is built as a PWA and is installable on mobile devices. It features a splash screen on load and automatically attempts to authenticate users using a saved JWT token.
+The application is built as a PWA and is installable on mobile devices. you can access it using URL https://egcity-et.vercel.app/dashboard
 
 ## Technologies Used
 - **Spring Boot** for the backend.
