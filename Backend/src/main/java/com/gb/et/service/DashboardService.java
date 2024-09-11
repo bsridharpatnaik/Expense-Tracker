@@ -27,10 +27,7 @@ public class DashboardService {
     private TransactionRepository transactionRepository;
 
     @Autowired
-    private UserRepository userRepository;  // Assuming you have a repository to fetch user details
-
-    @Autowired
-    UserDetailsServiceImpl userDetailsService;
+    private UserDetailsServiceImpl userDetailsService;
 
     public TransactionSummary getTransactionSummary(String dateOrMonth) throws ParseException {
         SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -39,9 +36,11 @@ public class DashboardService {
         Organization userOrganization = userDetailsService.getOrganizationForCurrentUser();
 
         if (dateOrMonth.length() > 7) {
+            // Daily summary
             Date date = dateFormatter.parse(dateOrMonth);
             summary = getSummary(date, true, userOrganization);
         } else {
+            // Monthly summary
             Date month = monthFormatter.parse(dateOrMonth + "-01");
             summary = getSummary(month, false, userOrganization);
         }
@@ -51,7 +50,8 @@ public class DashboardService {
     private TransactionSummary getSummary(Date date, boolean isDaily, Organization organization) {
         Sort sort = Sort.by(Sort.Direction.DESC, "creationDate");
         Map<TransactionType, List<Transaction>> transactionsByType = new EnumMap<>(TransactionType.class);
-        double carryForward = 0.0, totalIncome = 0.0, totalExpense = 0.0;
+        double carryForward = calculateCarryForward(date, organization);
+        double totalIncome = 0.0, totalExpense = 0.0;
 
         for (TransactionType type : TransactionType.values()) {
             List<Transaction> transactions = isDaily ?
@@ -60,14 +60,19 @@ public class DashboardService {
 
             transactionsByType.put(type, transactions);
 
+            // Calculate total income/expense
             for (Transaction t : transactions) {
-                if (type == TransactionType.INCOME) totalIncome += t.getAmount();
-                if (type == TransactionType.EXPENSE) totalExpense += t.getAmount();
+                if (type == TransactionType.INCOME) {
+                    totalIncome += t.getAmount();
+                } else if (type == TransactionType.EXPENSE) {
+                    totalExpense += t.getAmount();
+                }
             }
         }
-        carryForward += transactionRepository.sumAmountByTypeBeforeDateAndOrganization(date, TransactionType.INCOME, organization) - transactionRepository.sumAmountByTypeBeforeDateAndOrganization(date, TransactionType.EXPENSE, organization);
+
         double balance = carryForward + totalIncome - totalExpense;
         String userName = userDetailsService.getCurrentUser();
+
         return new TransactionSummary(transactionsByType, carryForward, totalIncome, totalExpense, balance, userName);
     }
 
@@ -78,38 +83,22 @@ public class DashboardService {
         monthFormatter.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
 
         Organization userOrganization = userDetailsService.getOrganizationForCurrentUser();
+        Date startDate, endDate;
 
-        Date startDate = null;
-        Date endDate = null;
-        boolean isMonthQuery = false;
-
-        // Parse startDate and endDate based on the inputs
         if (startDateStr.length() > 7) {
-            // Single day query or start date in full date format
+            // Single day or date range
             startDate = fullDateFormatter.parse(startDateStr);
-            if (endDateStr == null) {
-                // If endDate is null, assume we are querying only one day
-                endDate = startDate;
-            } else {
-                endDate = fullDateFormatter.parse(endDateStr);
-            }
+            endDate = (endDateStr != null) ? fullDateFormatter.parse(endDateStr) : startDate;
         } else {
-            // Month query (e.g., "2024-08")
+            // Month range
             startDate = monthFormatter.parse(startDateStr + "-01");
-            if (endDateStr == null) {
-                // Set endDate to the last day of the month
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(startDate);
-                cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
-                endDate = cal.getTime();
-            } else {
-                // For custom range, parse endDate
-                endDate = fullDateFormatter.parse(endDateStr);
-            }
-            isMonthQuery = true;
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(startDate);
+            cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
+            endDate = (endDateStr != null) ? fullDateFormatter.parse(endDateStr) : cal.getTime();
         }
 
-        // Initialize aggregation variables
+        // Calculate carryForward before the start date
         double carryForward = calculateCarryForward(startDate, userOrganization);
         double balance = carryForward;
         double totalIncome = 0.0;
@@ -122,7 +111,7 @@ public class DashboardService {
         Map<Date, List<Transaction>> transactionsByDate = transactions.stream()
                 .collect(Collectors.groupingBy(Transaction::getDate, TreeMap::new, Collectors.toList()));
 
-        // Initialize the carryForward for daily calculations
+        // Initialize carryForward for daily calculations
         double currentCarryForward = carryForward;
         List<DateTransactionSummary> dailySummaries = new ArrayList<>();
         Date firstDay = null;
@@ -162,7 +151,7 @@ public class DashboardService {
             // Create summary for the current date
             DateTransactionSummary dailySummary = new DateTransactionSummary(
                     date,
-                    currentCarryForward,  // Carryforward for today (balance of the previous day)
+                    currentCarryForward,
                     dailyIncome,
                     dailyExpense,
                     incomeTransactions,
@@ -171,37 +160,35 @@ public class DashboardService {
             );
 
             dailySummaries.add(dailySummary);
-
-            // Update carryForward for the next day (balance of the current day)
             currentCarryForward = dailyBalance;
         }
 
         // Aggregation outside of daily summaries
         if (!dailySummaries.isEmpty()) {
-            // Carryforward is the carryforward from the first day of the period
             carryForward = dailySummaries.get(0).getCarryForward();
-            // Balance is the balance of the last day
             balance = dailySummaries.get(dailySummaries.size() - 1).getBalance();
-            // Total income and expense are sums across all days
             totalIncome = dailySummaries.stream().mapToDouble(DateTransactionSummary::getTotalIncome).sum();
             totalExpense = dailySummaries.stream().mapToDouble(DateTransactionSummary::getTotalExpense).sum();
         }
 
-        // Return the overall month summary or date range summary with daily details
-        return new MonthTransactionSummary(
-                carryForward,
-                totalIncome,
-                totalExpense,
-                balance,
-                dailySummaries
-        );
+        return new MonthTransactionSummary(carryForward, totalIncome, totalExpense, balance, dailySummaries);
     }
 
     private double calculateCarryForward(Date startDate, Organization organization) {
-        // Logic to calculate carryForward from transactions before the given date
-        double totalIncomeBefore = transactionRepository.sumAmountByTypeBeforeDateAndOrganization(startDate, TransactionType.INCOME, organization);
-        double totalExpenseBefore = transactionRepository.sumAmountByTypeBeforeDateAndOrganization(startDate, TransactionType.EXPENSE, organization);
-        return totalIncomeBefore - totalExpenseBefore;
+        List<Object[]> totals = transactionRepository.sumAmountByTypeBeforeDateAndOrganization(startDate, organization);
+        double totalIncome = 0.0;
+        double totalExpense = 0.0;
+
+        for (Object[] total : totals) {
+            TransactionType type = (TransactionType) total[0];
+            double sum = (double) total[1];
+            if (type == TransactionType.INCOME) {
+                totalIncome += sum;
+            } else if (type == TransactionType.EXPENSE) {
+                totalExpense += sum;
+            }
+        }
+
+        return totalIncome - totalExpense;
     }
 }
-
