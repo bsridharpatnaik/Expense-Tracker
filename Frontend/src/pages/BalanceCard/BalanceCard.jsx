@@ -9,10 +9,15 @@ import { ReactComponent as Icon } from "../../assets/svgs/Icon.svg";
 import Menu from "../../components/Menu";
 import TransactionInfo from "../../components/TransactionInfo";
 import { addDays, subDays, addMonths, subMonths } from "date-fns";
-import { useGetDashboardTransactionDataQuery } from "../../service/api";
+import { useGetDashboardTransactionDataQuery, useGetMonthsQuery } from "../../service/api";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-
+import { useNavigate } from "react-router-dom";
+import MonthlyInfo from "../../components/MonthlyInfo";
+import { ReactComponent as IncomeIcon } from "../../assets/svgs/Download.svg";
+import { ReactComponent as ExpenseIcon } from "../../assets/svgs/Upload.svg";
+import SkeletonCard from "../../components/Skeleton";
+import MonthlyInfoSkeleton from "../../components/Skeleton/SkeletonMonth";
 function BalanceCard() {
   const [toggle, setToggle] = useState("D");
   const [dashboardData, setDashboardData] = useState({
@@ -27,14 +32,19 @@ function BalanceCard() {
     username: "anonymous",
   });
   const transactionRef = useRef(null); 
-
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showMenu, setShowMenu] = useState(false);
-  const { data, refetch } = useGetDashboardTransactionDataQuery(formatDate(selectedDate));
+  const { data, refetch,isFetching } = useGetDashboardTransactionDataQuery(formatDate(selectedDate),{
+    skip:toggle==="M"
+  });
+  const { data:monthData, refetch:monthRefetch,isFetching:monthFetching } = useGetMonthsQuery({date:formatDate(selectedDate)},{
+    skip:toggle==="D"
+  });
+  
   const handleToggle = (value) => {
     setToggle(value);
   };
-  console.log("data",data);
+  
   function formatDate(dateString) {
     const date = new Date(dateString);
     const day = String(date.getDate()).padStart(2, '0');
@@ -48,7 +58,11 @@ function BalanceCard() {
     // const formattedDate = await formatDate(date)
     setSelectedDate(date);
     // console.log(formattedDate,"formattedDate")
+    if(toggle==="D"){
     refetch()
+    }else{
+      monthRefetch()
+    }
   };
 
   const handlePrevDate = () => {
@@ -70,6 +84,7 @@ function BalanceCard() {
   const user = JSON.parse(localStorage.getItem("user"));
 
   const menuRef = useRef(null);
+  const navigate=useNavigate()
   const items = [
     {
       label: "Export to PDF",
@@ -81,6 +96,7 @@ function BalanceCard() {
     {
       label: "Documentation Vault",
       onClick: () => {
+        navigate("/documentation-vault")
         setShowMenu(false);
       },
     },
@@ -88,9 +104,11 @@ function BalanceCard() {
       label: "History",
       onClick: () => {
         setShowMenu(false);
+        navigate("/history")
+        
       },
     },
-    ...(user?.username !== "anonymous" ? [{
+    ...((user?.username && user?.username !== "anonymous") ? [{
       label: "Logout",
       onClick: () => {
         localStorage.clear();
@@ -101,41 +119,64 @@ function BalanceCard() {
 
 
   useEffect(() => {
-    if (data) {
+    if (data || monthData) {
       setDashboardData({
         transactionsByType: {
           EXPENSE: data?.transactionsByType?.EXPENSE,
           INCOME: data?.transactionsByType?.INCOME,
         },
-        carryForward: data.carryForward,
-        totalIncome: data.totalIncome,
-        totalExpense: data.totalExpense,
-        balance: data.balance,
-        username: data.username,
+        carryForward:toggle==="D"  ? data?.carryForward  : monthData?.carryForward ,
+        totalIncome:toggle==="D" ?  data?.totalIncome : monthData?.totalIncome,
+        totalExpense:toggle==="D" ?  data?.totalExpense : monthData?.totalExpense,
+        balance:toggle==="D" ?  data?.balance : monthData?.balance,
+        username: data?.username,
       });
       if(data?.username==="anonymous"){
         localStorage.clear()
       }
     }
-  }, [data]);
+  }, [data,monthData]);
+
   const exportToPDF = () => {
-    console.log("Clicked");
     const input = transactionRef.current;
-    html2canvas(input, { scale: 2 }) // Increase the scale for better quality
+  
+    if (!input) {
+      console.error("Invalid element: transactionRef is not attached to any DOM element");
+      return;
+    }
+  
+    html2canvas(input, { scale: 2 })
       .then((canvas) => {
         const imgData = canvas.toDataURL("image/png");
         const pdf = new jsPDF("p", "mm", "a4");
-        const imgProps = pdf.getImageProperties(imgData);
+  
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+  
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const imgHeight = (canvasHeight * pdfWidth) / canvasWidth;
+  
+        let heightLeft = imgHeight;
+        let position = 0;
+  
+        // Add the first page
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+  
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+          heightLeft -= pdfHeight;
+        }
+  
         pdf.save("transactions.pdf");
       })
       .catch((err) => {
         console.error("Failed to generate PDF", err);
       });
   };
-  
   return (
     <div>
       <div className="balance-card">
@@ -168,7 +209,7 @@ function BalanceCard() {
         <div className="balance-info">
           <div>
             <p>Total Balance</p>
-            <h2>₹{dashboardData.balance}</h2>
+            <h2>₹{dashboardData?.balance ?? monthData?.balance}</h2>
           </div>
           <div className="toggle-group">
             <div
@@ -210,15 +251,66 @@ function BalanceCard() {
           </button>
         </div>
       </div>
-      <div ref={transactionRef}> 
+      <div className="c-f">
+        <span>C/F</span>
+        <span>₹{dashboardData?.carryForward ?? monthData?.carryForward}</span>
+      </div>
+      <div className="summary">
+        <div className="summary-item">
+          <div className="summary-icon">
+            <IncomeIcon style={{ width: "24px", height: "44px" }} />
+          </div>
+          <div className="text">
+            <p>Total Income</p>
+            <h3 className="amount positive">₹{dashboardData?.totalIncome ?? monthData?.totalIncome}</h3>
+          </div>
+        </div>
+        <div className="summary-item">
+          <div className="summary-icon-ex">
+            <ExpenseIcon style={{ width: "24px", height: "44px" }} />
+          </div>
+          <div className="text">
+            <p>Total Expenses</p>
+            <h3 className="amount negative">₹{dashboardData?.totalExpense ?? monthData?.totalExpense}</h3>
+          </div>
+        </div>
+      </div>
+      {toggle === "D" && (
+  <>
+    {isFetching ? (
+      <SkeletonCard /> // Render a skeleton for TransactionInfo while fetching
+    ) : (
       <TransactionInfo
-        totalIncome={dashboardData.totalIncome}
-        totalExpense={dashboardData.totalExpense}
-        carryForward={dashboardData.carryForward}
+        transactionRef={transactionRef}
         expense={dashboardData.transactionsByType.EXPENSE}
         income={dashboardData.transactionsByType.INCOME}
       />
-      </div>
+    )}
+  </>
+)}
+
+{toggle === "M" && (
+  <div style={{ padding: "10px", display: "flex", gap: "20px", flexDirection: "column" }}>
+    {monthFetching ? (
+      <>
+        {[...Array(3)].map((_, index) => (
+          <MonthlyInfoSkeleton key={index} />
+        ))}
+      </>
+    ) : (
+      monthData?.dailySummaries?.map((val, index) => (
+        <MonthlyInfo
+          key={index}
+          val={val}
+          handleToggle={handleToggle}
+          handleDateChange={handleDateChange}
+        />
+      ))
+    )}
+  </div>
+)}
+
+
     </div>
   );
 }

@@ -10,7 +10,8 @@ import "./App.css";
 import BalanceCard from "./pages/BalanceCard/BalanceCard";
 import Login from "./pages/Login/Login";
 import History from "./pages/History";
-import Documentation from "./pages/Documentation-vault";
+import Documentation from "./pages/Documentation-vault/index.jsx";
+
 
 function SplashScreen() {
   const navigate = useNavigate();

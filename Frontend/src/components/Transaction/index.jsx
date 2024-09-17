@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect } from "react";
 import "./index.css";
 import { ReactComponent as Dots } from "../../assets/svgs/blackdots.svg";
 import Menu from "../Menu";
-import { format } from "date-fns";
 import { useDeleteTransactionMutation } from "../../service/api";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
+import TransactionOpenPopup from "../TransactionPopup";
 const Transaction = ({
   activeTab,
   borderBottom,
@@ -20,7 +21,7 @@ const Transaction = ({
 
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
-  const currentDate = new Date();
+  const[isOpen,setIsOpen]=useState(false)
   const items = [
     {
       label: "Edit",
@@ -39,20 +40,42 @@ const Transaction = ({
     },
   ];
     const [deleteTransaction] = useDeleteTransactionMutation()
-const handleDelete=async()=>{
- try{
-   const res= await deleteTransaction(item.id)
-   toast.success("Deleted Successfully")
- }catch(err){
-  toast.error("Something went wrong")
-  console.log("Err",err);
- }
-}
+
+    const handleDelete = async () => {
+      Swal.fire({
+        title: 'Are you sure?',
+        text: "Do you really want to delete this item? This action cannot be undone!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            const res = await deleteTransaction(item.id);
+            handleCloseModal()
+            toast.success("Deleted Successfully");
+            Swal.fire(
+              'Deleted!',
+              'Your item has been deleted.',
+              'success'
+            );
+          } catch (err) {
+            toast.error("Something went wrong");
+            console.log("Err", err);
+          }
+        }
+      });
+    };
   const handleClickOutside = (event) => {
     if (menuRef.current && !menuRef.current.contains(event.target)) {
       setShowMenu(false);
     }
   };
+  const handleCloseModal=()=>{
+    setIsOpen(false)
+  }
 
   function convertToTimeFormat(dateTimeString) {
     const [date, time, period] = dateTimeString.split(" ");
@@ -66,12 +89,13 @@ const handleDelete=async()=>{
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-console.log("Item",item);
   return (
-    <div
+    <>
+     <div
       className="transaction-item"
       style={{ borderBottom: borderBottom, backgroundColor: background }}
-    >
+      onClick={()=>setIsOpen(true)}
+      >
       <div className="transaction-icon">{activeTab?.toUpperCase()?.substring(0,1)}</div>
       <div className="transaction-details">
         <strong>{item?.title}</strong>
@@ -94,23 +118,25 @@ console.log("Item",item);
       </div>
       {showDetails && (
         <div className="transaction-amt">
-          <div className="transaction-amount positive">${item?.amount}</div>
+          <div className="transaction-amount positive">₹{item?.amount}</div>
           <div className="transaction-time">
             {convertToTimeFormat(item?.modificationDate)}
           </div>
         </div>
       )}
-      <div
+       {/* <div
         className="dots-container"
         ref={menuRef}
         style={{ position: "relative" }}
-      >
+       >
         {showIcon && (
           <Dots className="frame-icon" onClick={() => setShowMenu(!showMenu)} />
         )}
         {showMenu && <Menu items={items} />}
-      </div>
+      </div> */}
     </div>
+      <TransactionOpenPopup handleDelete={handleDelete}  item={item} isOpen={isOpen} activeTab={activeTab} historyLog={historyLog} date={date} handleCloseModal={handleCloseModal} convertToTimeFormat={convertToTimeFormat} showDetails={showDetails} />
+    </>
   );
 };
 

@@ -7,7 +7,12 @@
     padding: 20px;
     background-color: #fff;
   }
-  
+  .wrapper_login{
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap:30%
+  }
   .login-logo {
     width: 100px;
     margin-bottom: 20px;

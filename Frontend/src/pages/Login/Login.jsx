@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import logo from '../../assets/png/evergreen.png';
 import './login.css';
-
 import { ReactComponent as Lock } from "../../assets/svgs/Frame.svg";
-
 import { ReactComponent as Hidden } from "../../assets/svgs/Group.svg";
-
+import { ReactComponent as Left } from '../../assets/svgs/arrowleft.svg';
 import { ReactComponent as Profile } from "../../assets/svgs/Profile.svg";
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 
 
@@ -16,7 +15,7 @@ function Login() {
   const [password, setPassword] = useState('');
   const [passwordShown, setPasswordShown] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const navigate=useNavigate()
   const togglePasswordVisibility = () => {
     setPasswordShown(!passwordShown);
   };
@@ -41,7 +40,6 @@ function Login() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Login successful', data);
         window.location.href="/dashboard"
         localStorage.setItem("user",JSON.stringify(data))
         // Handle successful login, e.g., redirect to dashboard
@@ -58,7 +56,10 @@ function Login() {
 
   return (
     <div className="login-container">
-      <img src={logo} alt="Evergreen City Logo" className="login-logo" />
+     <div className='wrapper_login'>
+     <Left onClick={() => navigate("/dashboard")} />
+     <img src={logo} alt="Evergreen City Logo" className="login-logo" />
+     </div>
       <div style={{display:"flex", flexDirection:"column", justifyContent:"start", marginRight:"59px"}}>
         <h2>Login Account</h2>
         <p>Please login with your registered account.</p>
@@ -67,7 +68,7 @@ function Login() {
       <div className="input-group">
         <label>Username</label>
         <div className="input-wrapper">
-      <Profile />
+         <Profile />
           <input
             type="email"
             placeholder="Enter Username"

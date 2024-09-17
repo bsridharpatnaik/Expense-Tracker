@@ -114,16 +114,11 @@ public class DashboardService {
         // Initialize carryForward for daily calculations
         double currentCarryForward = carryForward;
         List<DateTransactionSummary> dailySummaries = new ArrayList<>();
-        Date firstDay = null;
-        Date lastDay = null;
 
         // Iterate over each day in the range
         for (Map.Entry<Date, List<Transaction>> entry : transactionsByDate.entrySet()) {
             Date date = entry.getKey();
             List<Transaction> dailyTransactions = entry.getValue();
-
-            if (firstDay == null) firstDay = date;
-            lastDay = date;
 
             // Calculate daily income and expense
             double dailyIncome = 0.0;
@@ -151,7 +146,7 @@ public class DashboardService {
             // Create summary for the current date
             DateTransactionSummary dailySummary = new DateTransactionSummary(
                     date,
-                    currentCarryForward,
+                    currentCarryForward,  // Carryforward for today (balance of the previous day)
                     dailyIncome,
                     dailyExpense,
                     incomeTransactions,
@@ -163,6 +158,9 @@ public class DashboardService {
             currentCarryForward = dailyBalance;
         }
 
+        // Sort dailySummaries by date in descending order
+        dailySummaries.sort(Comparator.comparing(DateTransactionSummary::getDate).reversed());
+
         // Aggregation outside of daily summaries
         if (!dailySummaries.isEmpty()) {
             carryForward = dailySummaries.get(0).getCarryForward();
@@ -173,6 +171,7 @@ public class DashboardService {
 
         return new MonthTransactionSummary(carryForward, totalIncome, totalExpense, balance, dailySummaries);
     }
+
 
     private double calculateCarryForward(Date startDate, Organization organization) {
         List<Object[]> totals = transactionRepository.sumAmountByTypeBeforeDateAndOrganization(startDate, organization);

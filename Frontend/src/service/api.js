@@ -6,12 +6,18 @@ export const api = createApi({
     baseUrl: `${process.env.REACT_APP_BASE_URL}`,
     prepareHeaders: (headers, { endpoint }) => {
       const user = JSON.parse(localStorage.getItem("user"));
-      headers.set("Authorization", `Bearer ${user?.token}`);
-      headers.set("Cookie", "JSESSIONID=13CE0F53190CC7367FF06C791AC3FF27");
-      if (endpoint !== "uploadFile") {
-        headers.set("Content-Type", "application/json");
-        return headers;
+      if (user?.token) {
+        headers.set("Authorization", `Bearer ${user?.token}`);
       }
+      headers.set("Cookie", "JSESSIONID=13CE0F53190CC7367FF06C791AC3FF27");
+      if (endpoint === "uploadFile" || endpoint === "addSubFile") {
+        return headers;
+      } else if (endpoint === "downloadFile") {
+        headers.set("Content-Type", "application/octet-stream");
+      } else {
+        headers.set("Content-Type", "application/json");
+      }
+
       return headers;
     },
   }),
@@ -59,10 +65,63 @@ export const api = createApi({
       }),
       invalidatesTags: ["Dashboard"],
     }),
-     getHistory: builder.query({
+    getHistory: builder.query({
       query: () => ({
         url: `/history`,
         method: "GET",
+      }),
+    }),
+    getDocumentationVault: builder.query({
+      query: (id) => ({
+        url: `/vault/folders?folderId=${id}`,
+        method: "GET",
+      }),
+      providesTags: ["Folders"],
+    }),
+    addSubFolder: builder.mutation({
+      query: ({ name, id }) => ({
+        url: `/vault/folders?name=${name}&parentId=${id}`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Folders"],
+    }),
+    addSubFile: builder.mutation({
+      query: (formData) => {
+        return {
+          url: `/vault/files`,
+          method: "POST",
+          body: formData,
+        };
+      },
+      invalidatesTags: ["Folders"],
+    }),
+    deleteFolder: builder.mutation({
+      query: (id) => {
+        return {
+          url: `/vault/folders/${id}`,
+          method: "DELETE",
+        };
+      },
+      invalidatesTags: ["Folders"],
+    }),
+    deleteFile: builder.mutation({
+      query: (id) => {
+        return {
+          url: `/vault/files/${id}`,
+          method: "DELETE",
+        };
+      },
+      invalidatesTags: ["Folders"],
+    }),
+    downloadFile: builder.query({
+      query: ({ id }) => ({
+        url: `/vault/files/download/${id}`,
+        responseType: "blob",
+      }),
+    }),
+    getMonths: builder.query({
+      query: ({ date }) => ({
+        url: `/dashboard/summary/grouped?startDate=${date}`,
       }),
     }),
   }),
@@ -75,5 +134,12 @@ export const {
   useGetDashboardTransactionDataQuery,
   useDeleteTransactionMutation,
   useUpdateTransactionMutation,
-  useGetHistoryQuery
+  useGetHistoryQuery,
+  useGetDocumentationVaultQuery,
+  useAddSubFolderMutation,
+  useAddSubFileMutation,
+  useDeleteFolderMutation,
+  useDeleteFileMutation,
+  useDownloadFileQuery,
+  useGetMonthsQuery
 } = api;
