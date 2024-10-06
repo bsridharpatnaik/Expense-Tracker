@@ -33,7 +33,7 @@ const TransactionInfo = ({
       <div className="add-btn">
           <AddButton onClick={handleAddButtonClick} />
         </div>
-      <div className="transaction-history" ref={transactionRef}>
+      <div className="transaction-history">
         <h4>Transaction History</h4>
         <div className="tab-row" id="tab-row">
           <div
@@ -57,10 +57,12 @@ const TransactionInfo = ({
         {activeTab === "Income" && income.length === 0 && (
           <div className="no-transaction">No Transaction</div>
         )}
+        <div classname="transaction_card" ref={transactionRef}>
         {activeTab === "Expense" &&
           expense.map((item, index) => {
             return (
               <Transaction
+              transactionRe
                 activeTab={activeTab}
                 key={index}
                 showIcon={true}
@@ -89,6 +91,7 @@ const TransactionInfo = ({
               />
             );
           })}
+          </div>
       </div>
       <AddTransactionModal
         dataToShow={dataToShow}

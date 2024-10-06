@@ -11,6 +11,7 @@ import BalanceCard from "./pages/BalanceCard/BalanceCard";
 import Login from "./pages/Login/Login";
 import History from "./pages/History";
 import Documentation from "./pages/Documentation-vault/index.jsx";
+import HomeScreen from "./components/HomeScreen/index.jsx";
 
 
 function SplashScreen() {
@@ -18,7 +19,7 @@ function SplashScreen() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigate("/dashboard");
+      navigate("/home");
     }, 3000);
 
     return () => clearTimeout(timer);
@@ -36,6 +37,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<SplashScreen />} />
+        <Route path="/home" element={<HomeScreen />} />
         <Route path="/login" element={<Login />} />
         <Route path="/history" element={<History />} />
         <Route path="/documentation-vault" element={<Documentation />} />

@@ -3,10 +3,11 @@ import "./index.css";
 
 const MonthlyInfo = ({ val,handleToggle,handleDateChange }) => {
   const { date, carryForward, totalIncome, totalExpense, incomeTransactions, expenseTransactions, balance } = val;
-  const formattedDate = new Date(date).toLocaleDateString("en-GB").replace(/\//g, '-');
-
+  const [day, month, year] = date.split('-');
+  const formattedDateForPicker = `${year}-${month}-${day}`;
+   
   return (
-    <div className="transaction-container" onClick={()=>{handleToggle("D");handleDateChange(formattedDate)}} >
+    <div className="transaction-container" onClick={()=>{handleToggle("D");handleDateChange(formattedDateForPicker)}} >
     <div className="transaction-header">
       <span style={{fontSize:"12px",color: "#666875"}}>{date}</span>
       <span style={{fontSize:"12px",color: "#181D31"}}>C/F ₹{carryForward}</span>
@@ -20,7 +21,7 @@ const MonthlyInfo = ({ val,handleToggle,handleDateChange }) => {
        <h2 className="amount green"  style={{fontSize:"10px"}}>₹{totalIncome}</h2>
        </div>
         <div className="transaction-list">
-          {incomeTransactions.map((item, index) => (
+          {incomeTransactions?.map((item, index) => (
             <div key={index} className="transaction-item">
            <div className="text_">
            <span style={{fontSize:"10px"}}>{item.title}</span>
@@ -39,7 +40,7 @@ const MonthlyInfo = ({ val,handleToggle,handleDateChange }) => {
         <h2 className="amount red" style={{fontSize:"10px"}}>₹{totalExpense}</h2>
         </div>
         <div className="transaction-list">
-          {expenseTransactions.map((item, index) => (
+          {expenseTransactions?.map((item, index) => (
             <div key={index} className="transaction-item">
                       <div className="text_">
 
