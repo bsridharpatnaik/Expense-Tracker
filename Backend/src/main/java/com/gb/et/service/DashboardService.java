@@ -29,7 +29,8 @@ public class DashboardService {
     @Autowired
     private UserDetailsServiceImpl userDetailsService;
 
-    public TransactionSummary getTransactionSummary(String dateOrMonth) throws ParseException {
+    // Modified getTransactionSummary to filter by party
+    public TransactionSummary getTransactionSummary(String dateOrMonth, String party) throws ParseException {
         SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd");
         SimpleDateFormat monthFormatter = new SimpleDateFormat("yyyy-MM");
         TransactionSummary summary;
@@ -38,25 +39,26 @@ public class DashboardService {
         if (dateOrMonth.length() > 7) {
             // Daily summary
             Date date = dateFormatter.parse(dateOrMonth);
-            summary = getSummary(date, true, userOrganization);
+            summary = getSummary(date, true, userOrganization, party);
         } else {
             // Monthly summary
             Date month = monthFormatter.parse(dateOrMonth + "-01");
-            summary = getSummary(month, false, userOrganization);
+            summary = getSummary(month, false, userOrganization, party);
         }
         return summary;
     }
 
-    private TransactionSummary getSummary(Date date, boolean isDaily, Organization organization) {
+    // Modified getSummary to filter by party
+    private TransactionSummary getSummary(Date date, boolean isDaily, Organization organization, String party) {
         Sort sort = Sort.by(Sort.Direction.DESC, "creationDate");
         Map<TransactionType, List<Transaction>> transactionsByType = new EnumMap<>(TransactionType.class);
-        double carryForward = calculateCarryForward(date, organization);
+        double carryForward = calculateCarryForward(date, organization, party);
         double totalIncome = 0.0, totalExpense = 0.0;
 
         for (TransactionType type : TransactionType.values()) {
             List<Transaction> transactions = isDaily ?
-                    transactionRepository.findByDateAndTransactionTypeAndOrganization(date, type, organization, sort) :
-                    transactionRepository.findByMonthAndTransactionTypeAndOrganization(date, type, organization, sort);
+                    transactionRepository.findByDateAndTransactionTypeAndOrganizationAndParty(date, type, organization, party, sort) :
+                    transactionRepository.findByMonthAndTransactionTypeAndOrganizationAndParty(date, type, organization, party, sort);
 
             transactionsByType.put(type, transactions);
 
@@ -76,7 +78,8 @@ public class DashboardService {
         return new TransactionSummary(transactionsByType, carryForward, totalIncome, totalExpense, balance, userName);
     }
 
-    public MonthTransactionSummary getTransactionsGroupedByDateRange(String startDateStr, String endDateStr) throws ParseException {
+    // Modified getTransactionsGroupedByDateRange to filter by party
+    public MonthTransactionSummary getTransactionsGroupedByDateRange(String startDateStr, String endDateStr, String party) throws ParseException {
         SimpleDateFormat fullDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
         SimpleDateFormat monthFormatter = new SimpleDateFormat("yyyy-MM");
         fullDateFormatter.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
@@ -99,13 +102,13 @@ public class DashboardService {
         }
 
         // Calculate carryForward before the start date
-        double carryForward = calculateCarryForward(startDate, userOrganization);
+        double carryForward = calculateCarryForward(startDate, userOrganization, party);
         double balance = carryForward;
         double totalIncome = 0.0;
         double totalExpense = 0.0;
 
         // Fetch all transactions in the given date range
-        List<Transaction> transactions = transactionRepository.findByDateRangeAndOrganization(startDate, endDate, userOrganization);
+        List<Transaction> transactions = transactionRepository.findByDateRangeAndOrganizationAndParty(startDate, endDate, userOrganization, party);
 
         // Group transactions by date
         Map<Date, List<Transaction>> transactionsByDate = transactions.stream()
@@ -172,9 +175,9 @@ public class DashboardService {
         return new MonthTransactionSummary(carryForward, totalIncome, totalExpense, balance, dailySummaries);
     }
 
-
-    private double calculateCarryForward(Date startDate, Organization organization) {
-        List<Object[]> totals = transactionRepository.sumAmountByTypeBeforeDateAndOrganization(startDate, organization);
+    // Modified calculateCarryForward to consider party
+    private double calculateCarryForward(Date startDate, Organization organization, String party) {
+        List<Object[]> totals = transactionRepository.sumAmountByTypeBeforeDateAndOrganizationAndParty(startDate, organization, party);
         double totalIncome = 0.0;
         double totalExpense = 0.0;
 
@@ -191,3 +194,4 @@ public class DashboardService {
         return totalIncome - totalExpense;
     }
 }
+

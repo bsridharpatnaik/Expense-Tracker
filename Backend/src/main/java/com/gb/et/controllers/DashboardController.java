@@ -23,10 +23,12 @@ public class DashboardController {
     @Autowired
     private DashboardService dashboardService;
 
+    // Modified to include 'party' parameter
     @GetMapping("/summary")
-    public ResponseEntity<?> getTransactionSummary(@RequestParam String dateOrMonth) {
+    public ResponseEntity<?> getTransactionSummary(@RequestParam String dateOrMonth,
+                                                   @RequestParam(value = "party", required = false) String party) {
         try {
-            TransactionSummary summary = dashboardService.getTransactionSummary(dateOrMonth);
+            TransactionSummary summary = dashboardService.getTransactionSummary(dateOrMonth, party);
             return ResponseEntity.ok(summary);
         } catch (ParseException e) {
             ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Invalid date format: " + e.getMessage());
@@ -37,10 +39,13 @@ public class DashboardController {
         }
     }
 
+    // Modified to include 'party' parameter
     @GetMapping("/summary/grouped")
-    public ResponseEntity<?> getTransactionSummaryGrouped(@RequestParam String startDate, @RequestParam(required = false) String endDate) {
+    public ResponseEntity<?> getTransactionSummaryGrouped(@RequestParam String startDate,
+                                                          @RequestParam(required = false) String endDate,
+                                                          @RequestParam(value = "party", required = false) String party) {
         try {
-            MonthTransactionSummary summary = dashboardService.getTransactionsGroupedByDateRange(startDate, endDate);
+            MonthTransactionSummary summary = dashboardService.getTransactionsGroupedByDateRange(startDate, endDate, party);
             return ResponseEntity.ok(summary);
         } catch (ParseException e) {
             ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Invalid date format: " + e.getMessage());
@@ -51,4 +56,5 @@ public class DashboardController {
         }
     }
 }
+
 
