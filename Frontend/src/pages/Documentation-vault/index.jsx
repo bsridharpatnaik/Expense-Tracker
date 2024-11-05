@@ -7,7 +7,7 @@ import Breadcrumb from "../../components/Breadcrumb";
 import { useGetDocumentationVaultQuery } from "../../service/api";
 import UploadFolder from "../../components/UploadFolder/index";
 import UploadFile from "../../components/UploadFile/index";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import SkeletonCard from "../../components/Skeleton";
 
 const Documentation = () => {
@@ -17,6 +17,13 @@ const Documentation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFileOpen, setIsFileOpen] = useState(false);
   const navigate=useNavigate()
+  const location=useLocation()
+  useEffect(() => {
+    // If the navigation is not programmatic, redirect to /home
+    if (!location.state?.isProgrammatic) {
+      navigate('/home');
+    }
+  }, [location.state, navigate]);
   const { data: fetchedData, refetch,isFetching } =
     useGetDocumentationVaultQuery(folderId);
   const items = [
@@ -40,7 +47,7 @@ const Documentation = () => {
     if(folderData.parentFolderId){
       setFolderId(folderData.parentFolderId)
     }else{
-      navigate("/dashboard")
+      navigate("/dashboard",{state:{isProgrammatic:true}})
     }
   };
 

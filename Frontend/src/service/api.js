@@ -37,12 +37,15 @@ export const api = createApi({
       }),
     }),
     getDashboardTransactionData: builder.query({
-      query: (date) => ({
-        url: `/dashboard/summary?dateOrMonth=${date}`,
+      query: ({ date, selectedOption }) => ({
+        url: selectedOption
+          ? `/dashboard/summary?dateOrMonth=${date}&party=${selectedOption}`
+          : `/dashboard/summary?dateOrMonth=${date}`,
         method: "GET",
       }),
       providesTags: ["Dashboard"],
     }),
+
     uploadFile: builder.mutation({
       query: (formData) => ({
         url: `/file/upload`,
@@ -120,8 +123,17 @@ export const api = createApi({
       }),
     }),
     getMonths: builder.query({
-      query: ({ date }) => ({
-        url: `/dashboard/summary/grouped?startDate=${date}`,
+      query: ({ date, selectedOption }) => ({
+        url: selectedOption
+          ? `/dashboard/summary/grouped?startDate=${date}&party=${selectedOption}`
+          : `/dashboard/summary/grouped?startDate=${date}`,
+      }),
+    }),
+    getFiltered: builder.query({
+      query: ({ startDate, endDate, selectedOption }) => ({
+        url: selectedOption
+          ? `/dashboard/summary/grouped?startDate=${startDate}&endDate=${endDate}&party=${selectedOption}`
+          : `/dashboard/summary/grouped?startDate=${startDate}&endDate=${endDate}`,
       }),
     }),
   }),
@@ -141,5 +153,6 @@ export const {
   useDeleteFolderMutation,
   useDeleteFileMutation,
   useDownloadFileQuery,
-  useGetMonthsQuery
+  useGetMonthsQuery,
+  useGetFilteredQuery,
 } = api;

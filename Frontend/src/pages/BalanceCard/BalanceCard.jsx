@@ -3,7 +3,6 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "./Balancecard.css";
 import logo from "../../assets/png/evergreen.png";
-import { ReactComponent as ThreeIcon } from "../../assets/svgs/three.svg";
 import { ReactComponent as FrameIcon } from "../../assets/svgs/Frame2.svg";
 import { ReactComponent as Icon } from "../../assets/svgs/Icon.svg";
 import Menu from "../../components/Menu";
@@ -11,36 +10,49 @@ import TransactionInfo from "../../components/TransactionInfo";
 import { addDays, subDays, addMonths, subMonths } from "date-fns";
 import {
   useGetDashboardTransactionDataQuery,
+  useGetExistingPartyQuery,
+  useGetFilteredQuery,
   useGetMonthsQuery,
 } from "../../service/api";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import MonthlyInfo from "../../components/MonthlyInfo";
 import { ReactComponent as IncomeIcon } from "../../assets/svgs/Download.svg";
 import { ReactComponent as ExpenseIcon } from "../../assets/svgs/Upload.svg";
 import SkeletonCard from "../../components/Skeleton";
 import MonthlyInfoSkeleton from "../../components/Skeleton/SkeletonMonth";
+import moment from "moment/moment";
 function BalanceCard() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const searchRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [startDate, setStartDate] = useState(moment().startOf('month').format('YYYY-MM-DD'));
+  const [endDate, setEndDate] = useState(moment().endOf('month').format('YYYY-MM-DD'));
+  const { data:partyOptions } = useGetExistingPartyQuery();
+  const [selectedOption, setSelectedOption] = useState(null);
 
   const toggleSearch = () => {
     if (searchQuery) {
       handleSearch(); // Perform search if query exists
     } else {
       setIsSearching(true); // Open search bar
-   setSearchQuery("")
-
+      setIsDropdownOpen(true); // Open dropdown immediately when the search is active
+      setSearchQuery("");
     }
   };
-
+  useEffect(() => {
+    // If the navigation is not programmatic, redirect to /home
+    if (!location.state?.isProgrammatic) {
+      navigate('/home');
+    }
+  }, [location.state, navigate]);
   // Perform the search
   const handleSearch = () => {
    if(searchQuery==="Evergr33n"){
-    navigate("/login")
+    navigate("/login",{state:{isProgrammatic:true}})
     return
    }
    setSearchQuery("")
@@ -74,26 +86,54 @@ function BalanceCard() {
   const transactionRef = useRef(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showMenu, setShowMenu] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // New state for dropdown visibility
+  const handleOptionSelect = (option) => {
+    setSearchQuery(option);  // Set the selected option in the search input
+    setSelectedOption(option); // Mark the selected option
+    setIsDropdownOpen(false); // Close the dropdown after selecting
+  };
   const { data, refetch, isFetching } = useGetDashboardTransactionDataQuery(
-    formatDate(selectedDate),
+   { date:formatDate(selectedDate),selectedOption},
     {
-      skip: toggle === "M",
+      skip: toggle === "M" || toggle==="C",
     }
   );
   const {
     data: monthData,
     refetch: monthRefetch,
     isFetching: monthFetching,
-
   } = useGetMonthsQuery(
-    { date: formatDate(selectedDate) },
+    { date: formatDate(selectedDate),selectedOption },
     {
-      skip: toggle === "D",
+      skip: toggle === "D" || toggle==="C",
     }
   );
 
+  const handleStartDateChange = (e) => {
+    setStartDate(e.target.value);
+  };
+
+  const handleEndDateChange = (e) => {
+    setEndDate(e.target.value);
+  };
+  const {
+    data: filteredData,
+    refetch: filteredRefetch,
+    isFetching: filterFetching,
+  } = useGetFilteredQuery(
+    { startDate: formatDate(startDate), endDate : formatDate(endDate),selectedOption },
+    {
+      skip: toggle === "D" || toggle==="M",
+    }
+  );
+  console.log("filteredData",filteredData);
+  
   const handleToggle = (value) => {
     setToggle(value);
+    if (value === 'C') {
+      setStartDate(moment().startOf('month').format('YYYY-MM-DD'));
+      setEndDate(moment().endOf('month').format('YYYY-MM-DD'));
+    }
   };
 
   function formatDate(dateString) {
@@ -106,13 +146,13 @@ function BalanceCard() {
   }
 
   const handleDateChange = async (date) => {
-    // const formattedDate = await formatDate(date)
     setSelectedDate(date);
-    // console.log(formattedDate,"formattedDate")
     if (toggle === "D") {
       refetch();
-    } else {
+    } else if(toggle === "M") {
       monthRefetch();
+    }else{
+      filteredRefetch()
     }
   };
 
@@ -135,6 +175,7 @@ function BalanceCard() {
   const user = JSON.parse(localStorage.getItem("user"));
 
   const menuRef = useRef(null);
+
   const items = [
     {
       label: "Export to PDF",
@@ -146,7 +187,7 @@ function BalanceCard() {
     {
       label: "Documentation Vault",
       onClick: () => {
-        navigate("/documentation-vault");
+        navigate("/documentation-vault",{state : {isProgrammatic:true}});
         setShowMenu(false);
       },
     },
@@ -154,7 +195,7 @@ function BalanceCard() {
       label: "History",
       onClick: () => {
         setShowMenu(false);
-        navigate("/history");
+        navigate("/history",{state : {isProgrammatic:true}});
       },
     },
     ...(user?.username && user?.username !== "anonymous"
@@ -163,7 +204,7 @@ function BalanceCard() {
             label: "Logout",
             onClick: () => {
               localStorage.clear();
-              window.location.reload();
+              navigate("/home")
             },
           },
         ]
@@ -246,6 +287,12 @@ function BalanceCard() {
     pdf.save("transactions.pdf");
   };
 
+  const filteredOptions = partyOptions?.filter((option) =>
+    option.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const dataToRender=monthData?.dailySummaries?.length ? monthData?.dailySummaries :  filteredData?.dailySummaries
+  
   return (
     <div>
       <div className="balance-card">
@@ -259,25 +306,46 @@ function BalanceCard() {
           <div className="user-info">
             <div className="icons">
             <div ref={searchRef} className={`search-input-container ${isSearching ? 'active' : ''}`}>
-        {isSearching ? (
-          <>
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search..."
-              autoFocus
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <Icon
-              className="search-icon-input"
-              onClick={toggleSearch} // Click to search if input has value
-            />
-          </>
-        ) : (
-          <Icon className="search-icon" onClick={() => setIsSearching(true)} />
-        )}
-      </div>
+  {isSearching ? (
+    <>
+      <input
+        type="text"
+        className="search-input"
+        placeholder="Search..."
+        autoFocus
+        value={searchQuery}
+        onChange={(e) => {
+          setSearchQuery(e.target.value);
+          setIsDropdownOpen(true); // Open dropdown while typing
+        }}
+      />
+      <Icon
+        className="search-icon-input"
+        onClick={toggleSearch}
+      />
+      {/* Show dropdown if dropdown is open and there are filtered options */}
+      {isDropdownOpen && filteredOptions?.length > 0 && (
+        <ul className="options-list">
+          {filteredOptions.map((option) => (
+            <li
+              key={option}
+              onClick={() => handleOptionSelect(option)}
+              className={selectedOption === option ? 'selected' : ''}
+            >
+              {option}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  ) : (
+    <Icon className="search-icon" onClick={toggleSearch} />
+  )}
+</div>
+
+
+
+
              
               <div className="dots-container">
                 <FrameIcon
@@ -308,8 +376,40 @@ function BalanceCard() {
             >
               M
             </div>
+            <div
+              className={`toggle-btn ${toggle === "C" ? "selected" : ""}`}
+              onClick={() => handleToggle("C")}
+            >
+              C
+            </div>
           </div>
+         
         </div>
+       
+    {toggle === 'C' && (
+      <div className="custom-date-filter">
+        <div className="date-input">
+          <label>
+            Start Date:
+            <input
+              type="date"
+              value={startDate}
+              onChange={handleStartDateChange}
+            />
+          </label>
+        </div>
+        <div className="date-input">
+          <label>
+            End Date:
+            <input
+              type="date"
+              value={endDate}
+              onChange={handleEndDateChange}
+            />
+          </label>
+        </div>
+      </div>
+    )}
         <div className="date-selector">
           <button className="prev-date" onClick={handlePrevDate}>
             {"<"}
@@ -377,7 +477,7 @@ function BalanceCard() {
         </>
       )}
 
-      {toggle === "M" && (
+      {(toggle === "M" || toggle==="C") && (
         <div
           style={{
             padding: "10px",
@@ -386,14 +486,14 @@ function BalanceCard() {
             flexDirection: "column",
           }}
         >
-          {monthFetching ? (
+          {monthFetching || filterFetching ? (
             <>
               {[...Array(3)].map((_, index) => (
                 <MonthlyInfoSkeleton key={index} />
               ))}
             </>
           ) : (
-            monthData?.dailySummaries?.map((val, index) => (
+            dataToRender?.map((val, index) => (
               <MonthlyInfo
                 key={index}
                 val={val}
@@ -405,7 +505,7 @@ function BalanceCard() {
         </div>
       )}
     </div>
-  );
+  )
 }
 
 export default BalanceCard;

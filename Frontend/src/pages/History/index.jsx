@@ -1,20 +1,27 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import './index.css';
 import { ReactComponent as Left } from '../../assets/svgs/arrowleft.svg';
 import Transaction from '../../components/Transaction';
 import { useGetHistoryQuery } from '../../service/api';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import SkeletonCard from '../../components/Skeleton';
 
 const History = () => {
   const { data, isFetching } = useGetHistoryQuery();
   const navigate = useNavigate();
-
+   const location=useLocation()
+   
+   useEffect(() => {
+    // If the navigation is not programmatic, redirect to /home
+    if (!location.state?.isProgrammatic) {
+      navigate('/home');
+    }
+  }, [location.state, navigate]);
   return (
     <div className='wrapper'>
       <div className='wrapper_container_heading'>
         <div className='text_container'>
-          <Left onClick={() => navigate("/dashboard")} />
+          <Left onClick={() => navigate("/dashboard",{state:{isProgrammatic:true}})} />
           <h5>History</h5>
         </div>
       </div>

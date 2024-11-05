@@ -1,24 +1,29 @@
-import React, { useState } from 'react';
-import logo from '../../assets/png/evergreen.png';
-import './login.css';
+import React, { useEffect, useState } from "react";
+import logo from "../../assets/png/evergreen.png";
+import "./login.css";
 import { ReactComponent as Lock } from "../../assets/svgs/Frame.svg";
 import { ReactComponent as Hidden } from "../../assets/svgs/Group.svg";
-import { ReactComponent as Left } from '../../assets/svgs/arrowleft.svg';
+import { ReactComponent as Left } from "../../assets/svgs/arrowleft.svg";
 import { ReactComponent as Profile } from "../../assets/svgs/Profile.svg";
-import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
-
-
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [passwordShown, setPasswordShown] = useState(false);
   const [loading, setLoading] = useState(false);
-  const navigate=useNavigate()
+  const navigate = useNavigate();
+  
+
+  
+
+
   const togglePasswordVisibility = () => {
     setPasswordShown(!passwordShown);
   };
+
+
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -30,7 +35,7 @@ function Login() {
     };
 
     try {
-      const response = await fetch('https://egcity.in/expense-tracker/api/auth/login', {
+      const response = await fetch(`https://egcity.in/expense-tracker/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -40,8 +45,9 @@ function Login() {
 
       if (response.ok) {
         const data = await response.json();
-        window.location.href="/dashboard"
         localStorage.setItem("user",JSON.stringify(data))
+
+        navigate("/dashboard",{state : {isProgrammatic:true}})
         // Handle successful login, e.g., redirect to dashboard
       } else {
        toast.error("Bad Credentials")
@@ -56,11 +62,18 @@ function Login() {
 
   return (
     <div className="login-container">
-     <div className='wrapper_login'>
-     <Left onClick={() => navigate("/dashboard")} />
-     <img src={logo} alt="Evergreen City Logo" className="login-logo" />
-     </div>
-      <div style={{display:"flex", flexDirection:"column", justifyContent:"start", marginRight:"59px"}}>
+      <div className="wrapper_login">
+        <Left onClick={() => navigate("/dashboard")} />
+        <img src={logo} alt="Evergreen City Logo" className="login-logo" />
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "start",
+          marginRight: "59px",
+        }}
+      >
         <h2>Login Account</h2>
         <p>Please login with your registered account.</p>
       </div>
@@ -68,13 +81,14 @@ function Login() {
       <div className="input-group">
         <label>Username</label>
         <div className="input-wrapper">
-         <Profile />
+          <Profile />
           <input
             type="email"
             placeholder="Enter Username"
-            style={{color:"black"}}
+            style={{ color: "black" }}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            autoComplete="off"
           />
         </div>
       </div>
@@ -82,31 +96,25 @@ function Login() {
       <div className="input-group">
         <label>Password</label>
         <div className="input-wrapper">
-         <Lock />
+          <Lock />
           <input
             type={passwordShown ? "text" : "password"}
             placeholder="Enter your password"
-            style={{color:"black"}}
+            style={{ color: "black" }}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
           />
           <Hidden />
-          {/* <img
-            src={hidden}
-            alt="Toggle Visibility Icon"
-            className="toggle-icon"
-            onClick={togglePasswordVisibility}
-            style={{ cursor: 'pointer' }}
-          /> */}
         </div>
       </div>
 
-      <button className="login-button" onClick={handleSubmit} disabled={loading}>
-        {loading ? (
-          <div className="loader"></div>  
-        ) : (
-          "Sign In"
-        )}
+      <button
+        className="login-button"
+        onClick={handleSubmit}
+        disabled={loading}
+      >
+        {loading ? <div className="loader"></div> : "Sign In"}
       </button>
     </div>
   );
