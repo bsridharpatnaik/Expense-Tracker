@@ -142,7 +142,19 @@ const AddTransactionModal = ({dataToShow, isOpen, setIsModalOpen, isUpdate }) =>
     };
    try{
     if(isUpdate){
-     const response=await update({id:dataToShow.id , data});
+      const { date, ...otherData } = data;
+  
+      const dateObj = new Date(date);
+      const formattedDate = [
+        String(dateObj.getDate()).padStart(2, '0'),       
+        String(dateObj.getMonth() + 1).padStart(2, '0'),   
+        dateObj.getFullYear()                              
+      ].join('-');                                        
+    
+  
+      const updatedData = { ...otherData, date: formattedDate };
+    
+      const response = await update({ id: dataToShow.id, data: updatedData });
      if(response?.error){
       toast.error(response?.error?.data?.message)
     }else{
@@ -327,7 +339,6 @@ const AddTransactionModal = ({dataToShow, isOpen, setIsModalOpen, isUpdate }) =>
   try {
     previewUrl = URL.createObjectURL(file);
   } catch (error) {
-    console.error("Error creating object URL:", error);
 
     const fileExtension = file?.name?.split('.').pop().toLowerCase();
 
