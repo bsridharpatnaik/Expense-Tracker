@@ -55,7 +55,7 @@
 			]
 		},
 		{
-			"name": "File Handling",
+			"name": "File Handling - Transaction",
 			"item": [
 				{
 					"name": "Upload File",
@@ -76,7 +76,14 @@
 					],
 					"request": {
 						"auth": {
-							"type": "noauth"
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
 						},
 						"method": "POST",
 						"header": [],
@@ -86,7 +93,7 @@
 								{
 									"key": "file",
 									"type": "file",
-									"src": "/Users/bsridharpatnaik/Downloads/Pricing.jpg"
+									"src": "/Users/bsridharpatnaik/Downloads/ExistingPlatforms.pdf"
 								}
 							]
 						},
@@ -114,8 +121,24 @@
 				{
 					"name": "DownloadFile",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{acces",
+								"type": "text"
+							}
+						],
 						"url": {
 							"raw": "{{servername}}/api/file/download/{{fileUuid}}",
 							"host": [
@@ -140,7 +163,14 @@
 					"name": "Party List",
 					"request": {
 						"auth": {
-							"type": "noauth"
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{party}}",
+									"type": "string"
+								}
+							]
 						},
 						"method": "GET",
 						"header": [],
@@ -310,7 +340,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{servername}}/api/dashboard/summary?dateOrMonth=2024-08",
+							"raw": "{{servername}}/api/dashboard/summary?dateOrMonth=2024-10",
 							"host": [
 								"{{servername}}"
 							],
@@ -322,7 +352,7 @@
 							"query": [
 								{
 									"key": "dateOrMonth",
-									"value": "2024-08"
+									"value": "2024-10"
 								}
 							]
 						}
@@ -335,7 +365,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{servername}}/api/dashboard/summary?dateOrMonth=2024-08",
+							"raw": "{{servername}}/api/dashboard/summary?dateOrMonth=2024-10",
 							"host": [
 								"{{servername}}"
 							],
@@ -347,7 +377,33 @@
 							"query": [
 								{
 									"key": "dateOrMonth",
-									"value": "2024-08"
+									"value": "2024-10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch Monthly Grouped",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{servername}}/api/dashboard/summary/grouped?startDate=2024-10",
+							"host": [
+								"{{servername}}"
+							],
+							"path": [
+								"api",
+								"dashboard",
+								"summary",
+								"grouped"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2024-10"
 								}
 							]
 						}
@@ -641,8 +697,8 @@
 							"script": {
 								"exec": [
 									"// Define the range of days (last 60 days)",
-									"const daysAgoStart = 60;",
-									"const daysAgoEnd = 1;",
+									"const daysAgoStart = 3;",
+									"const daysAgoEnd = 0;",
 									"",
 									"// Generate a random number of days between 1 and 60",
 									"const randomDaysAgo = Math.floor(Math.random() * (daysAgoEnd - daysAgoStart + 1)) + daysAgoStart;",
