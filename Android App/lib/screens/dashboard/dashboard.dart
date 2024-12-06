@@ -1,0 +1,704 @@
+import 'package:expense_tracker/screens/dashboard/tabs/dateWiseTab.dart';
+import 'package:expense_tracker/screens/dashboard/tabs/monthlyGroupTab.dart';
+import 'package:expense_tracker/widgets/transactionWidgets.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:month_picker_dialog/month_picker_dialog.dart';
+import '../../build_config.dart';
+import '../../constants.dart';
+import '../../handlers/createTransactionPdf.dart';
+import '../../handlers/http_request_handler.dart';
+import '../../models/groupedSummaryModel.dart';
+import '../../models/transactionModel.dart';
+import '../documentationVaultScreen.dart';
+import '../historyScreen.dart';
+import '../webview.dart';
+
+class Dashboard extends StatefulWidget {
+  const Dashboard({super.key});
+
+  @override
+  State<Dashboard> createState() => _DashboardState();
+}
+
+enum Tab { calendar, month, day }
+enum AppBarMenuItems { pdfExport, documentationVault, history, logout }
+enum TransactionTab { expenses, income }
+
+class _DashboardState extends State<Dashboard> {
+  Tab selectedTab = Tab.day;
+  TransactionTab selectedTransactionTab = TransactionTab.expenses;
+  DateTime selectedDate = DateTime.now();
+  String formattedDate = '';
+  String formattedStartDate = '';
+  String formattedEndDate = '';
+  TransactionResponse transactions = TransactionResponse.fromJson({});
+  GroupedSummary groupedTransactions = GroupedSummary.fromJson({});
+  List<String> partyList = [];
+  String totalBalance = '';
+  String totalIncome = '';
+  String totalExpense = '';
+  String CF = '';
+  DateTime startDate = DateTime(DateTime.now().year, DateTime.now().month, 1);
+  DateTime endDate = DateTime(
+    DateTime.now().year,
+    DateTime.now().month + 1,
+    0,
+  );
+
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    transactionGet();
+  }
+
+  createPdf() async {
+    await requestManageExternalStoragePermission();
+    await requestStoragePermission();
+    await createTransactionPdf(transactions);
+  }
+
+  Future<void> onRefresh() async {
+    await transactionGet();
+    setState(() {}); // Rebuild the UI after refreshing data
+  }
+
+  void switchToDayTab(DateTime date) {
+    setState(() {
+      selectedTab = Tab.day;
+      selectedDate = date; // Update the variable
+      transactionGet();
+    });
+  }
+
+  // Method to go to the next date
+  void goToNextDate() {
+    setState(() {
+      if (selectedTab == Tab.day){
+        selectedDate = selectedDate.add(const Duration(days: 1)); // Subtract 1 day
+      }
+      if (selectedTab == Tab.month){
+        selectedDate = DateTime(
+          selectedDate.year,
+          selectedDate.month + 1,
+          selectedDate.day,
+        );
+      }
+      transactionGet();
+    });
+  }
+
+  // Method to go to the previous date
+  void goToPreviousDate() {
+    setState(() {
+      if (selectedTab == Tab.day){
+        selectedDate = selectedDate.subtract(const Duration(days: 1)); // Subtract 1 day
+      }
+      if (selectedTab == Tab.month){
+        selectedDate = DateTime(
+          selectedDate.year,
+          selectedDate.month - 1,
+          selectedDate.day,
+        );
+      }
+      transactionGet();
+    });
+  }
+
+  Future<void> openDatePicker() async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (pickedDate != null && pickedDate != selectedDate) {
+      setState(() {
+        selectedDate = pickedDate;
+        transactionGet();
+      });
+    }
+  }
+
+  Future<void> startDatePicker() async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: startDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (pickedDate != null && pickedDate != startDate) {
+      setState(() {
+        startDate = pickedDate;
+        transactionGet();
+      });
+    }
+  }
+
+  Future<void> endDatePicker() async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: endDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (pickedDate != null && pickedDate != startDate) {
+      setState(() {
+        endDate = pickedDate;
+        transactionGet();
+      });
+    }
+  }
+
+  Future<void> openMonthPicker() async {
+    final DateTime? pickedMonth = await showMonthPicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (pickedMonth != null && pickedMonth != selectedDate) {
+      setState(() {
+        selectedDate = pickedMonth;
+        transactionGet();
+      });
+    }
+  }
+
+  partyGet() async {
+    List temp = await HttpRequestHandler(context).getParty();
+    if(temp.isNotEmpty){
+      setState(() {
+        BuildConfig.partyList = temp.map((item) => item.toString()).toList();
+      });
+    }
+  }
+
+  transactionGet() async {
+    partyGet();
+    if(selectedTab == Tab.day){
+      String dateOrMonth = DateFormat('yyyy-MM-dd').format(selectedDate);
+      Map<String, dynamic> respJson =
+      await HttpRequestHandler(context).transactionGet(dateOrMonth);
+      if (respJson['status'] == 200) {
+        setState(() {
+          transactions = TransactionResponse.fromJson(respJson);
+          totalBalance = transactions.balance.toString();
+          totalExpense = transactions.totalExpense.toString();
+          totalIncome = transactions.totalIncome.toString();
+          CF = transactions.carryForward.toString();
+        });
+      }
+    }
+    if(selectedTab == Tab.month){
+      String dateOrMonth = DateFormat('yyyy-MM').format(selectedDate);
+      Map<String, dynamic> respJson =
+      await HttpRequestHandler(context).monthlyTransactionGet(dateOrMonth);
+      if (respJson['status'] == 200) {
+        setState(() {
+          groupedTransactions = GroupedSummary.fromJson(respJson);
+          totalBalance = groupedTransactions.balance.toString();
+          totalExpense = groupedTransactions.totalExpense.toString();
+          totalIncome = groupedTransactions.totalIncome.toString();
+          CF = groupedTransactions.carryForward.toString();
+        });
+      }
+    }
+    if(selectedTab == Tab.calendar){
+      String start = DateFormat('yyyy-MM-dd').format(startDate);
+      String end = DateFormat('yyyy-MM-dd').format(endDate);
+      Map<String, dynamic> respJson =
+      await HttpRequestHandler(context).dateRangeTransactionGet(start,end);
+      if (respJson['status'] == 200) {
+        setState(() {
+          groupedTransactions = GroupedSummary.fromJson(respJson);
+          totalBalance = groupedTransactions.balance.toString();
+          totalExpense = groupedTransactions.totalExpense.toString();
+          totalIncome = groupedTransactions.totalIncome.toString();
+          CF = groupedTransactions.carryForward.toString();
+        });
+      }
+    }
+  }
+
+  dateFormatter(){
+    if(selectedTab == Tab.day){
+      return DateFormat('dd, MMM yy E').format(selectedDate);
+    }else{
+      return DateFormat('MMM yy').format(selectedDate);
+    }
+  }
+
+  Future<bool> _onWillPop() async {
+    return (await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Exit',
+          style: TextStyle(color: Colors.red),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 8,
+        contentPadding: const EdgeInsets.all(10),
+        content: Text(
+          '   Do you want to Exit?',
+          style: TextStyle(color: Colors.indigo[900]),
+        ),
+        actions: [
+          ElevatedButton(
+              style: ButtonStyle(
+                backgroundColor:
+                MaterialStateProperty.all<Color>(Colors.lightGreen),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (context) => WebViewPage(),
+                  ),
+                );
+              },
+              child: const Text(
+                'Yes',
+                style: TextStyle(color: Colors.white),
+              )),
+          ElevatedButton(
+              style: ButtonStyle(
+                backgroundColor:
+                MaterialStateProperty.all<Color>(Colors.lightGreen),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text(
+                'No',
+                style: TextStyle(color: Colors.white),
+              )),
+        ],
+      ),
+    ));
+  }
+
+  logout(){
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => WebViewPage(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    formattedDate = dateFormatter();
+    formattedStartDate = DateFormat('dd-MM-yyyy').format(startDate);
+    formattedEndDate = DateFormat('dd-MM-yyyy').format(endDate);
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Constants.primaryBlue,
+          automaticallyImplyLeading: false,
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: Image.asset(
+                        'assets/evergreen.png',
+                      )),
+                  const SizedBox(width: 10),
+                  Text(
+                    "Hi, ${BuildConfig.username}",
+                    style: const TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  const Icon(Icons.search, color: Colors.white),
+                  const SizedBox(width: 10),
+                  PopupMenuButton<AppBarMenuItems>(
+                    iconColor: Colors.white,
+                    position: PopupMenuPosition.under,
+                    onSelected: (AppBarMenuItems item) {
+                      setState(() {
+                        if(item == AppBarMenuItems.history){
+                          Navigator.push(context,
+                              MaterialPageRoute(builder: (context) => const HistoryScreen()));
+                        }
+                        if(item == AppBarMenuItems.documentationVault){
+                          Navigator.push(context,
+                              MaterialPageRoute(builder: (context) => const DocumentationVault(folderId: '',)));
+                        }
+                        if(item == AppBarMenuItems.logout){
+                          logout();
+                        }
+                        if(item == AppBarMenuItems.pdfExport){
+                          createPdf();
+                        }
+                      });
+                    },
+                    itemBuilder: (BuildContext context) => <PopupMenuEntry<AppBarMenuItems>>[
+                      const PopupMenuItem<AppBarMenuItems>(
+                        value: AppBarMenuItems.pdfExport,
+                        child: Text('Export to PDF'),
+                      ),
+                      const PopupMenuItem<AppBarMenuItems>(
+                        value: AppBarMenuItems.documentationVault,
+                        child: Text('Documentation Vault'),
+                      ),
+                      const PopupMenuItem<AppBarMenuItems>(
+                        value: AppBarMenuItems.history,
+                        child: Text('History'),
+                      ),
+                      const PopupMenuItem<AppBarMenuItems>(
+                        value: AppBarMenuItems.logout,
+                        child: Text('Logout'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        body: SingleChildScrollView(
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  color: Constants.primaryBlue,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Total Balance",
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white),
+                              ),
+                              Text(
+                                "₹$totalBalance",
+                                style: const TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    selectedTab = Tab.day;
+                                    transactionGet();
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(
+                                    shape: const CircleBorder(),
+                                    backgroundColor: selectedTab == Tab.day
+                                        ? Constants.selectedTab
+                                        : Constants.secondaryBlue),
+                                child: Text(
+                                  "D",
+                                  style: TextStyle(
+                                      color: selectedTab == Tab.day
+                                          ? Constants.primaryBlue
+                                          : Constants.blueWhite),
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    selectedTab = Tab.month;
+                                    transactionGet();
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(
+                                    shape: const CircleBorder(),
+                                    backgroundColor: selectedTab == Tab.month
+                                        ? Constants.selectedTab
+                                        : Constants.secondaryBlue),
+                                child: Text(
+                                  "M",
+                                  style: TextStyle(
+                                      color: selectedTab == Tab.month
+                                          ? Constants.primaryBlue
+                                          : Constants.blueWhite),
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    selectedTab = Tab.calendar;
+                                    transactionGet();
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(
+                                    shape: const CircleBorder(),
+                                    backgroundColor: selectedTab == Tab.calendar
+                                        ? Constants.selectedTab
+                                        : Constants.secondaryBlue),
+                                child: Text(
+                                  "C",
+                                  style: TextStyle(
+                                      color: selectedTab == Tab.calendar
+                                          ? Constants.primaryBlue
+                                          : Constants.blueWhite),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      // Date Selector
+                      if (selectedTab != Tab.calendar)
+                        Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ElevatedButton(
+                              onPressed: () {
+                                goToPreviousDate();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                shape: const RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.all(Radius.circular(5))),
+                                backgroundColor: Constants.secondaryBlue,
+                                minimumSize: const Size(30, 30),
+                                padding: EdgeInsets.zero,
+                              ),
+                              child: Icon(
+                                Icons.arrow_left,
+                                color: Constants.blueWhite,
+                              )),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                  30), // Adjust the radius as needed
+                              child: GestureDetector(
+                                onTap: (){
+                                  if(selectedTab == Tab.day){
+                                    openDatePicker();
+                                  }else{
+                                    openMonthPicker();
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 5, horizontal: 10),
+                                  color: Constants.secondaryBlue,
+                                  child: Center(
+                                    child: Text(
+                                      formattedDate,
+                                      style: const TextStyle(
+                                          fontSize: 16, color: Colors.white),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                              onPressed: () {
+                                goToNextDate();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.all(Radius.circular(5)),
+                                ),
+                                minimumSize: const Size(30, 30),
+                                padding: EdgeInsets.zero,
+                                backgroundColor: Constants.secondaryBlue,
+                              ),
+                              child: Icon(
+                                Icons.arrow_right,
+                                color: Constants.blueWhite,
+                              )
+                          ),
+                        ],
+                      ),
+                      if (selectedTab == Tab.calendar)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                                5), // Adjust the radius as needed
+                            child: GestureDetector(
+                              onTap: (){
+                                startDatePicker();
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 5, horizontal: 10),
+                                color: Constants.secondaryBlue,
+                                child: Center(
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        formattedStartDate,
+                                        style: const TextStyle(
+                                            fontSize: 16, color: Colors.white),
+                                      ),
+                                      const SizedBox(width: 5,),
+                                      const Icon(Icons.calendar_today, color: Colors.white, size: 15,),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10,),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                                5), // Adjust the radius as needed
+                            child: GestureDetector(
+                              onTap: (){
+                                endDatePicker();
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 5, horizontal: 10),
+                                color: Constants.secondaryBlue,
+                                child: Center(
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        formattedEndDate,
+                                        style: const TextStyle(
+                                            fontSize: 16, color: Colors.white),
+                                      ),
+                                      const SizedBox(width: 5,),
+                                      const Icon(Icons.calendar_today, color: Colors.white, size: 15,),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],),
+                      const SizedBox(height: 20),
+                      // C/F Section
+                      Container(
+                        color: Colors.grey,
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("C/F"),
+                            Text(
+                              "₹$CF",
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Card(
+                          color: Constants.income10,
+                          child: const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child:
+                            Icon(Icons.download, color: Colors.green),
+                          ),
+                        ),
+                        Column(
+                          children: [
+                            const Text("Total Income"),
+                            Text(
+                              "₹$totalIncome",
+                              style: const TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Card(
+                          color: Constants.expense10,
+                          child: const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Icon(Icons.upload, color: Colors.red),
+                          ),
+                        ),
+                        Column(
+                          children: [
+                            const Text("Total Expenses"),
+                            Text(
+                              "₹$totalExpense",
+                              style: const TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                if (selectedTab == Tab.day)
+                SizedBox(
+                    width: MediaQuery.of(context).size.width,
+                    child: DayWiseTab(transactions: transactions, onRefresh: onRefresh,)
+                ),
+                if (selectedTab != Tab.day)
+                  SizedBox(
+                      width: MediaQuery.of(context).size.width,
+                      child: MonthlyGroupTab(transactions: groupedTransactions, onChangeTab: switchToDayTab,)
+                  )
+              ],
+            ),
+          ),
+        ),
+        floatingActionButton: Visibility(
+          visible: selectedTab == Tab.day,
+          child: FloatingActionButton(
+            onPressed: () {
+              TransactionWidgets(onRefresh,context).addTransactionSheet(null);
+            },
+            backgroundColor: Colors.green,
+            child: const Icon(
+              Icons.add,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
