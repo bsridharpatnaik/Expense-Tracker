@@ -1,8 +1,11 @@
 import 'dart:io';
-
+import 'dart:typed_data';
+import 'package:path/path.dart' as path;
+import 'package:bot_toast/bot_toast.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../build_config.dart';
 import '../constants.dart';
@@ -10,17 +13,19 @@ import '../utils/dateTimeFormatter.dart';
 import '../handlers/http_request_handler.dart';
 import '../models/transactionModel.dart';
 import 'alertDialogs.dart';
+import 'blobDialog.dart';
 
 class TransactionWidgets {
   BuildContext context;
   final Future<void> Function() onRefresh;
-  TransactionWidgets( this.onRefresh,this.context);
+  TransactionWidgets(this.onRefresh, this.context);
   transactionHistoryCard(Transaction transaction) {
+    double width = MediaQuery.of(context).size.width;
     return Card(
       child: Container(
         color: Constants.gray15,
         padding: const EdgeInsets.all(10),
-        width: MediaQuery.of(context).size.width,
+        width: width,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -38,11 +43,13 @@ class TransactionWidgets {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      transaction.title,
-                      style:
-                          const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                      transaction.party,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700),
                     ),
-                    Text(transaction.party),
+                    SizedBox(
+                      width: width*.64,
+                        child: Text(transaction.title)),
                   ],
                 ),
               ],
@@ -82,31 +89,64 @@ class TransactionWidgets {
     }
     dateController.text = DateFormat('dd/MM/yyyy').format(selectedDate);
     final List<String> partyList = BuildConfig.partyList;
-    String? _fileName;
-    File? _file;
+    List<String> _fileNames = [];
+    List<File> _files = [];
     var fileMaps = [];
+
     Future<void> _pickFile(StateSetter setStateModal) async {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        allowMultiple: false,
-        type: FileType.any,
-        // allowedExtensions: ['jpg', 'png', 'pdf', 'docx'],
-      );
-      if (result != null) {
-        setStateModal(() {
-          _file = File(result.files.single.path!); // Store the file
-          _fileName = result.files.single.name; // Store the file name
-        });
-        var fileMap = await HttpRequestHandler(context).fileUpload(_file!);
-        if (fileMap != null) {
-          fileMaps.add(fileMap);
+      BuildConfig.appIsActive = true;
+      try {
+        FilePickerResult? result = await FilePicker.platform.pickFiles(
+          allowMultiple: false,
+          type: FileType.any,
+          // allowedExtensions: ['jpg', 'png', 'pdf', 'docx'],
+        );
+        if (result != null) {
+          File _file = File(result.files.single.path!); // Store the file
+          setStateModal(() {
+            _files.add(File(result.files.single.path!)); // Store the file
+            _fileNames.add(result.files.single.name); // Store the file name
+          });
+          var fileMap = await HttpRequestHandler(context).fileUpload(_file!);
+          if (fileMap != null) {
+            fileMaps.add(fileMap);
+          }
+        } else {
+          // setStateModal(() {
+          //   _file = null; // Reset if no file is selected
+          //   _fileName = null;
+          // });
         }
-      } else {
-        setStateModal(() {
-          _file = null; // Reset if no file is selected
-          _fileName = null;
-        });
+      } finally {
+        BuildConfig.appIsActive = false;
       }
     }
+
+    _pickImageFromCamera(StateSetter setStateModal) async {
+      BuildConfig.appIsActive = true;
+      try {
+        var image = await ImagePicker()
+            .pickImage(source: ImageSource.camera, imageQuality: 60);
+        if (image != null) {
+          if (image != null) {
+            setStateModal(() {
+              _files.add(File(image.path));
+              _fileNames.add(path.basename(File(image.path)!.path));
+            });
+            var fileMap = await HttpRequestHandler(context).fileUpload(File(image.path)!);
+            if (fileMap != null) {
+              fileMaps.add(fileMap);
+            }
+          }
+        } else {
+          // Toaster.e(_context, message: "No image is scanned.");
+        }
+        return null;
+      } finally {
+        BuildConfig.appIsActive = false;
+      }
+    }
+
     showModalBottomSheet<void>(
       backgroundColor: Colors.white,
       context: context,
@@ -115,6 +155,7 @@ class TransactionWidgets {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext context) {
+        double width = MediaQuery.of(context).size.width;
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setStateModal) {
             return Padding(
@@ -141,9 +182,9 @@ class TransactionWidgets {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      editMode?"Update":'Add',
-                      style:
-                          const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      editMode ? "Update" : 'Add',
+                      style: const TextStyle(
+                          fontSize: 22, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -200,8 +241,8 @@ class TransactionWidgets {
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide.none,
                         ),
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 12),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -221,8 +262,8 @@ class TransactionWidgets {
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide.none,
                         ),
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 12),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -296,7 +337,7 @@ class TransactionWidgets {
                           TextEditingController fieldController,
                           FocusNode focusNode,
                           VoidCallback onFieldSubmitted) {
-                        if(transaction!=null){
+                        if (transaction != null) {
                           fieldController.text = transaction.party;
                         }
                         selectPartyController = fieldController;
@@ -318,9 +359,19 @@ class TransactionWidgets {
                       },
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Upload Document',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Upload Document',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        GestureDetector(
+                            onTap: () {
+                              _pickImageFromCamera(setStateModal);
+                            },
+                            child: const Icon(Icons.camera_alt_outlined))
+                      ],
                     ),
                     const SizedBox(height: 8),
                     DottedBorder(
@@ -354,75 +405,118 @@ class TransactionWidgets {
                     ),
                     // Display file name and thumbnail if a file is selected
                     const SizedBox(height: 5),
-                    if (_file != null) ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              if (_fileName!.endsWith('.jpg') ||
-                                  _fileName!.endsWith('.png'))
-                                Image.file(
-                                  _file!,
-                                  width: 50,
-                                  height: 50,
-                                  fit: BoxFit.cover,
+                    if (_files.isNotEmpty)
+                      Column(
+                        children: List.generate(
+                          _files.length,
+                          (index) => Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    if (_fileNames[index].endsWith('.jpg') ||
+                                        _fileNames[index].endsWith('.png') ||
+                                        _fileNames[index].endsWith('.jpeg'))
+                                      Image.file(
+                                        _files[index],
+                                        width: 50,
+                                        height: 50,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    const SizedBox(width: 5),
+                                    SizedBox(
+                                      width: width * .73,
+                                      child: Text(
+                                        _fileNames[index],
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              const SizedBox(width: 5),
-                              Text(
-                                _fileName!,
-                                style: const TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.bold),
-                              ),
-                            ],
+                                GestureDetector(
+                                  child: const Icon(Icons.cancel_outlined),
+                                  onTap: () {
+                                    setStateModal(() {
+                                      _files.removeAt(index);
+                                      _fileNames.removeAt(index);
+                                      fileMaps.removeAt(index);
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
-                          GestureDetector(
-                            child: const Icon(Icons.cancel_outlined),
-                            onTap: () {
-                              setStateModal(() {
-                                _file = null;
-                                _fileName = null;
-                              });
-                            },
-                          )
-                        ],
+                        ),
                       ),
-                    ],
                     const SizedBox(height: 16),
-                    if(!editMode)
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                    if (!editMode)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
+                          child: const Text(
+                            'Add',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          onPressed: () async {
+                            if (titleController.text.isEmpty) {
+                              BotToast.showText(text: "Enter Title");
+                              return;
+                            }
+
+                            if (amountController.text.isEmpty ||
+                                int.tryParse(amountController.text) == null) {
+                              BotToast.showText(
+                                  text: "Please enter a valid amount");
+                              return;
+                            }
+
+                            if (selectPartyController.text.isEmpty) {
+                              BotToast.showText(
+                                  text: "Party selection cannot be empty");
+                              return;
+                            }
+
+                            if (transactionType.isEmpty) {
+                              BotToast.showText(
+                                  text: "Transaction type cannot be empty");
+                              return;
+                            }
+
+                            if (selectedDate == null) {
+                              BotToast.showText(text: "Please select a date");
+                              return;
+                            }
+
+                            var body = {
+                              "title": titleController.text,
+                              "party": selectPartyController.text,
+                              "amount": int.parse(amountController.text),
+                              "transactionType": transactionType.toUpperCase(),
+                              "date": DateFormat('dd-MM-yyyy')
+                                  .format(selectedDate!),
+                              "files": fileMaps
+                            };
+                            var respJson = await HttpRequestHandler(context)
+                                .postTransaction(body);
+                            if (respJson['status'] == 201) {
+                              Navigator.pop(context);
+                              onRefresh();
+                            }
+                          },
                         ),
-                        child: const Text(
-                          'Add',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        onPressed: () async {
-                          var body = {
-                            "title": titleController.text,
-                            "party": selectPartyController.text,
-                            "amount": int.parse(amountController.text),
-                            "transactionType": transactionType.toUpperCase(),
-                            "date":
-                                DateFormat('dd-MM-yyyy').format(selectedDate!),
-                            "files": fileMaps
-                          };
-                          var respJson = await HttpRequestHandler(context)
-                              .postTransaction(body);
-                          if (respJson['status'] == 201) {
-                            Navigator.pop(context);
-                            onRefresh();
-                          }
-                        },
                       ),
-                    ),
-                    if(editMode)
+                    if (editMode)
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -437,17 +531,46 @@ class TransactionWidgets {
                             style: TextStyle(color: Colors.white),
                           ),
                           onPressed: () async {
+                            if (titleController.text.isEmpty) {
+                              BotToast.showText(text: "Enter Title");
+                              return;
+                            }
+
+                            if (amountController.text.isEmpty ||
+                                int.tryParse(amountController.text) == null) {
+                              BotToast.showText(
+                                  text: "Please enter a valid amount");
+                              return;
+                            }
+
+                            if (selectPartyController.text.isEmpty) {
+                              BotToast.showText(
+                                  text: "Party selection cannot be empty");
+                              return;
+                            }
+
+                            if (transactionType.isEmpty) {
+                              BotToast.showText(
+                                  text: "Transaction type cannot be empty");
+                              return;
+                            }
+                            if (selectedDate == null) {
+                              BotToast.showText(text: "Please select a date");
+                              return;
+                            }
                             var body = {
                               "title": titleController.text,
                               "party": selectPartyController.text,
                               "amount": int.parse(amountController.text),
                               "transactionType": transactionType.toUpperCase(),
-                              "date":
-                              DateFormat('dd-MM-yyyy').format(selectedDate!),
+                              "date": DateFormat('dd-MM-yyyy')
+                                  .format(selectedDate!),
                               "files": fileMaps
                             };
+                            print("body:$body");
                             var respJson = await HttpRequestHandler(context)
-                                .updateTransaction(body,transaction!.id.toString());
+                                .updateTransaction(
+                                    body, transaction!.id.toString());
                             if (respJson['status'] == 200) {
                               Navigator.pop(context);
                               onRefresh();
@@ -466,6 +589,7 @@ class TransactionWidgets {
     );
   }
   editTransactionSheet(Transaction transaction) {
+    double width = MediaQuery.of(context).size.width;
     showModalBottomSheet<void>(
       backgroundColor: Colors.white,
       context: context,
@@ -516,10 +640,12 @@ class TransactionWidgets {
                                 },
                               ),
                               GestureDetector(
-                                  child: const Icon(Icons.delete_outline),
+                                child: const Icon(Icons.delete_outline),
                                 onTap: () async {
                                   Navigator.pop(context);
-                                  await AlertDialogs.showConfirmationDialog(context: context, transactionId: transaction.id.toString());
+                                  await AlertDialogs.showConfirmationDialog(
+                                      context: context,
+                                      transactionId: transaction.id.toString());
                                   onRefresh();
                                 },
                               )
@@ -533,6 +659,50 @@ class TransactionWidgets {
                       transactionHistoryCard(transaction),
                       const SizedBox(
                         height: 10,
+                      ),
+                      if (transaction.fileInfos.isNotEmpty) ...[
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: transaction.fileInfos.map((fileInfo) {
+                            return GestureDetector(
+                              onTap: () async {
+                                Uint8List blobData =
+                                    await HttpRequestHandler(context)
+                                        .fetchBlob(fileInfo.fileUuid);
+                                showBlobDialog(
+                                    context, blobData, null, fileInfo.filename);
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 5.0), // Add spacing between rows
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const SizedBox(width: 5),
+                                        SizedBox(
+                                          width: width * .9,
+                                          child: Text(
+                                            fileInfo.filename,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                      const SizedBox(
+                        height: 15,
                       ),
                     ],
                   ),

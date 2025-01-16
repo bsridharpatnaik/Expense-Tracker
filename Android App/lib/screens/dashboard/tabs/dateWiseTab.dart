@@ -123,6 +123,7 @@ class _DayWiseTabState extends State<DayWiseTab> {
                         ),
                     ],
                   ),
+                const SizedBox(height: 100),
               ],
             ),
           ),

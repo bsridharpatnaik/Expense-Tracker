@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bot_toast/bot_toast.dart';
 import 'package:expense_tracker/screens/spashscreen.dart';
 import 'package:expense_tracker/screens/webview.dart';
 import 'package:flutter/material.dart';
+
+import 'build_config.dart';
 
 void main() {
   runApp(const MyApp());
@@ -41,15 +44,30 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     Timer(const Duration(seconds: 2), () {
       initApplication();
     });
+  }
+
+  // @override
+  // void dispose() {
+  //   WidgetsBinding.instance.removeObserver(this);
+  //   super.dispose();
+  // }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {}
+    else if (state == AppLifecycleState.paused && !BuildConfig.appIsActive) {
+      exit(0);
+    }
   }
 
   @override

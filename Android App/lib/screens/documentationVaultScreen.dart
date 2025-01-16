@@ -1,11 +1,16 @@
 import 'dart:io';
-
+import 'dart:typed_data';
+import 'package:path/path.dart' as path;
 import 'package:dotted_border/dotted_border.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import '../build_config.dart';
 import '../constants.dart';
 import '../handlers/http_request_handler.dart';
+import '../handlers/notification_handler.dart';
 import '../models/folderModel.dart';
+import '../widgets/blobDialog.dart';
 
 class DocumentationVault extends StatefulWidget {
   final String folderId;
@@ -26,6 +31,35 @@ class _DocumentationVaultState extends State<DocumentationVault> {
     // TODO: implement initState
     folderGet();
     super.initState();
+  }
+
+  Future<void> saveBlobToDownloads(Uint8List blobData, String fileName) async {
+    try {
+      final Directory downloadsDirectory =
+          Directory('/storage/emulated/0/Download');
+      String filePath = '${downloadsDirectory.path}/$fileName';
+      File file = File(filePath);
+
+      // Check if a file with the same name already exists
+      int counter = 1;
+      while (file.existsSync()) {
+        // Modify the file name with a counter (e.g., "filename(1).ext")
+        final nameWithoutExtension = fileName.split('.').first;
+        final extension =
+            fileName.contains('.') ? '.${fileName.split('.').last}' : '';
+        filePath =
+            '${downloadsDirectory.path}/$nameWithoutExtension($counter)$extension';
+        file = File(filePath);
+        counter++;
+      }
+
+      // Write the file
+      await file.writeAsBytes(blobData);
+      print('File saved to $filePath');
+      NotificationHandler.showDefault("File downloaded.");
+    } catch (e) {
+      NotificationHandler.showDefault('Error saving file: $e');
+    }
   }
 
   folderGet() async {
@@ -116,7 +150,8 @@ class _DocumentationVaultState extends State<DocumentationVault> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(subFolder.itemCount.toString()),
-                            Text(subFolder.lastUpdateDate.toString()),
+                            if (subFolder.lastUpdateDate != null)
+                              Text(subFolder.lastUpdateDate.toString()),
                           ],
                         ),
                       ),
@@ -132,79 +167,94 @@ class _DocumentationVaultState extends State<DocumentationVault> {
   }
 
   fileCard(FileData file) {
-    return Card(
-      child: Container(
-        color: Constants.gray15,
-        padding: const EdgeInsets.all(10),
-        width: MediaQuery.of(context).size.width,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: Constants.gray30,
-                  // child:
-                  // Text(transaction.transactionType == 'INCOME' ? 'I' : 'E'),
-                ),
-                const SizedBox(
-                  width: 10,
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: width * 0.80,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            file.filename.toString(),
-                            softWrap: true,
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w700),
-                          ),
-                          PopupMenuButton<AppBarMenuItems>(
-                            iconColor: Colors.black,
-                            position: PopupMenuPosition.under,
-                            onSelected: (AppBarMenuItems item) {
-                              setState(() {
+    return GestureDetector(
+      onTap: () async {
+        Uint8List blobData = await HttpRequestHandler(context)
+            .fetchVaultBlob(file.id.toString());
+        showBlobDialog(context, blobData, null, file.filename);
+      },
+      child: Card(
+        child: Container(
+          color: Constants.gray15,
+          padding: const EdgeInsets.all(10),
+          width: MediaQuery.of(context).size.width,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: Constants.gray30,
+                    // child:
+                    // Text(transaction.transactionType == 'INCOME' ? 'I' : 'E'),
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: width * 0.80,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            SizedBox(
+                              width: width * 0.68,
+                              child: Text(
+                                file.filename.toString(),
+                                softWrap: true,
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            PopupMenuButton<AppBarMenuItems>(
+                              iconColor: Colors.black,
+                              position: PopupMenuPosition.under,
+                              onSelected: (AppBarMenuItems item) async {
                                 if (item == AppBarMenuItems.delete) {
                                   fileDeleteDialog(
                                       context: context,
                                       fileId: file.id.toString());
                                 }
-                              });
-                            },
-                            itemBuilder: (BuildContext context) =>
-                                <PopupMenuEntry<AppBarMenuItems>>[
-                              // const PopupMenuItem<AppBarMenuItems>(
-                              //   value: AppBarMenuItems.download,
-                              //   child: Text('Download'),
-                              // ),
-                              const PopupMenuItem<AppBarMenuItems>(
-                                value: AppBarMenuItems.delete,
-                                child: Text('Delete'),
-                              ),
-                            ],
-                          ),
-                        ],
+                                if (item == AppBarMenuItems.download) {
+                                  Uint8List blobData =
+                                      await HttpRequestHandler(context)
+                                          .fetchVaultBlob(file.id.toString());
+                                  await saveBlobToDownloads(
+                                      blobData, file.filename);
+                                }
+                              },
+                              itemBuilder: (BuildContext context) =>
+                                  <PopupMenuEntry<AppBarMenuItems>>[
+                                const PopupMenuItem<AppBarMenuItems>(
+                                  value: AppBarMenuItems.download,
+                                  child: Text('Download'),
+                                ),
+                                const PopupMenuItem<AppBarMenuItems>(
+                                  value: AppBarMenuItems.delete,
+                                  child: Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    SizedBox(
-                      width: width * 0.8,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Text(file.lastUpdateDate.toString()),
-                        ],
+                      SizedBox(
+                        width: width * 0.8,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(file.lastUpdateDate.toString()),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -213,21 +263,47 @@ class _DocumentationVaultState extends State<DocumentationVault> {
   String? _fileName;
   File? _file;
   Future<void> _pickFile(StateSetter setStateModal) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      allowMultiple: false,
-      type: FileType.any,
-      // allowedExtensions: ['jpg', 'png', 'pdf', 'docx'],
-    );
-    if (result != null) {
-      setStateModal(() {
-        _file = File(result.files.single.path!); // Store the file
-        _fileName = result.files.single.name; // Store the file name
-      });
-    } else {
-      setStateModal(() {
-        _file = null; // Reset if no file is selected
-        _fileName = null;
-      });
+    BuildConfig.appIsActive = true;
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        allowMultiple: false,
+        type: FileType.any,
+        // allowedExtensions: ['jpg', 'png', 'pdf', 'docx'],
+      );
+      if (result != null) {
+        setStateModal(() {
+          _file = File(result.files.single.path!); // Store the file
+          _fileName = result.files.single.name; // Store the file name
+        });
+      } else {
+        setStateModal(() {
+          _file = null; // Reset if no file is selected
+          _fileName = null;
+        });
+      }
+    } finally {
+      BuildConfig.appIsActive = false;
+    }
+  }
+
+  _pickImageFromCamera() async {
+    BuildConfig.appIsActive = true;
+    try {
+      var image = await ImagePicker()
+          .pickImage(source: ImageSource.camera, imageQuality: 60);
+      if (image != null) {
+        if (image != null) {
+          setState(() {
+            _file = File(image.path);
+            _fileName = path.basename(_file!.path);
+          });
+        }
+      } else {
+        // Toaster.e(_context, message: "No image is scanned.");
+      }
+      return null;
+    } finally {
+      BuildConfig.appIsActive = false;
     }
   }
 
@@ -377,14 +453,19 @@ class _DocumentationVaultState extends State<DocumentationVault> {
                       const SizedBox(
                         height: 6,
                       ),
-                      const Row(
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
+                          const Text(
                             'Add file',
                             style: TextStyle(
                                 fontSize: 22, fontWeight: FontWeight.bold),
                           ),
+                          GestureDetector(
+                              onTap: () {
+                                _pickImageFromCamera();
+                              },
+                              child: const Icon(Icons.camera_alt_outlined))
                         ],
                       ),
                       const SizedBox(
@@ -436,11 +517,14 @@ class _DocumentationVaultState extends State<DocumentationVault> {
                                     fit: BoxFit.cover,
                                   ),
                                 const SizedBox(width: 5),
-                                Text(
-                                  _fileName!,
-                                  style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold),
+                                SizedBox(
+                                  width: width * .73,
+                                  child: Text(
+                                    _fileName!,
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
                                 ),
                               ],
                             ),

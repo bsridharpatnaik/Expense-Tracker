@@ -34,7 +34,7 @@ class _DashboardState extends State<Dashboard> {
   String formattedEndDate = '';
   TransactionResponse transactions = TransactionResponse.fromJson({});
   GroupedSummary groupedTransactions = GroupedSummary.fromJson({});
-  List<String> partyList = [];
+  List<String> partyList = ['Option 1', 'Option 2', 'Option 3'];
   String totalBalance = '';
   String totalIncome = '';
   String totalExpense = '';
@@ -45,7 +45,9 @@ class _DashboardState extends State<Dashboard> {
     DateTime.now().month + 1,
     0,
   );
-
+  bool _isSearching = false;
+  TextEditingController _searchController = TextEditingController();
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -54,10 +56,25 @@ class _DashboardState extends State<Dashboard> {
     transactionGet();
   }
 
+  reinitializeDates(){
+    startDate = DateTime(DateTime.now().year, DateTime.now().month, 1);
+    endDate = DateTime(
+      DateTime.now().year,
+      DateTime.now().month + 1,
+      0,
+    );
+    selectedDate = DateTime.now();
+  }
+
   createPdf() async {
-    await requestManageExternalStoragePermission();
-    await requestStoragePermission();
-    await createTransactionPdf(transactions);
+    BuildConfig.appIsActive = true;
+    try{
+      await requestManageExternalStoragePermission();
+      await requestStoragePermission();
+      await createTransactionPdf(transactions);
+    }finally{
+      BuildConfig.appIsActive = false;
+    }
   }
 
   Future<void> onRefresh() async {
@@ -177,11 +194,17 @@ class _DashboardState extends State<Dashboard> {
   }
 
   transactionGet() async {
-    partyGet();
+    setState(() {
+      isLoading = true;
+    });
+    await partyGet();
+    setState(() {
+      partyList = BuildConfig.partyList;
+    });
     if(selectedTab == Tab.day){
       String dateOrMonth = DateFormat('yyyy-MM-dd').format(selectedDate);
       Map<String, dynamic> respJson =
-      await HttpRequestHandler(context).transactionGet(dateOrMonth);
+      await HttpRequestHandler(context).transactionGet(dateOrMonth, _searchController.text);
       if (respJson['status'] == 200) {
         setState(() {
           transactions = TransactionResponse.fromJson(respJson);
@@ -195,7 +218,7 @@ class _DashboardState extends State<Dashboard> {
     if(selectedTab == Tab.month){
       String dateOrMonth = DateFormat('yyyy-MM').format(selectedDate);
       Map<String, dynamic> respJson =
-      await HttpRequestHandler(context).monthlyTransactionGet(dateOrMonth);
+      await HttpRequestHandler(context).monthlyTransactionGet(dateOrMonth, _searchController.text);
       if (respJson['status'] == 200) {
         setState(() {
           groupedTransactions = GroupedSummary.fromJson(respJson);
@@ -210,7 +233,7 @@ class _DashboardState extends State<Dashboard> {
       String start = DateFormat('yyyy-MM-dd').format(startDate);
       String end = DateFormat('yyyy-MM-dd').format(endDate);
       Map<String, dynamic> respJson =
-      await HttpRequestHandler(context).dateRangeTransactionGet(start,end);
+      await HttpRequestHandler(context).dateRangeTransactionGet(start, end, _searchController.text);
       if (respJson['status'] == 200) {
         setState(() {
           groupedTransactions = GroupedSummary.fromJson(respJson);
@@ -221,6 +244,9 @@ class _DashboardState extends State<Dashboard> {
         });
       }
     }
+    setState(() {
+      isLoading = false;
+    });
   }
 
   dateFormatter(){
@@ -320,8 +346,79 @@ class _DashboardState extends State<Dashboard> {
                 ],
               ),
               Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.search, color: Colors.white),
+                  if (_isSearching)
+                    SizedBox(
+                      width: 150,
+                      child: Autocomplete<String>(
+                        optionsBuilder: (TextEditingValue textEditingValue) {
+                          if (textEditingValue.text.isEmpty) {
+                            return partyList;
+                          }
+                          return partyList.where((String option) {
+                            return option
+                                .toLowerCase()
+                                .contains(textEditingValue.text.toLowerCase());
+                          });
+                        },
+                        onSelected: (String selection) {
+                          _searchController.text = selection;
+                          transactionGet();
+                        },
+                        fieldViewBuilder: (BuildContext context,
+                            TextEditingController fieldController,
+                            FocusNode focusNode,
+                            VoidCallback onFieldSubmitted) {
+                          _searchController = fieldController;
+                          return TextField(
+                            controller: fieldController,
+                            focusNode: focusNode,
+                            autofocus: true,
+                            style: const TextStyle(
+                              color: Colors.white,   // Text color
+                              fontSize: 14.0,         // Text size
+                            ),
+                            onChanged: (val){
+                              transactionGet();
+                            },
+                            decoration: InputDecoration(
+                                hintText: 'Search...',
+                                hintStyle: const TextStyle(color: Colors.white70), // Hint text color
+                                suffixIcon: IconButton(
+                                  // padding: EdgeInsets.only(top: 12),
+                                  icon: const Icon(Icons.cancel, size: 20,), // Cancel icon color
+                                  onPressed: () {
+                                    setState(() {
+                                      _isSearching = false;
+                                      _searchController.clear();
+                                      fieldController.clear();
+                                      transactionGet();
+                                    });
+                                  },
+                                ),
+                                enabledBorder: const UnderlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.white), // Border color when not focused
+                                ),
+                                focusedBorder: const UnderlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.blueAccent), // Border color when focused
+                                ),
+                                contentPadding: const EdgeInsets.only(top: 12, left: 2)
+                            ),
+                          );
+                        },
+                      ),
+
+                    )
+                  else
+                    GestureDetector(
+                      onTap: (){
+                        setState(() {
+                          _isSearching = !_isSearching;
+                        });
+                      },
+                        child: const Icon(Icons.search, color: Colors.white)
+                    ),
                   const SizedBox(width: 10),
                   PopupMenuButton<AppBarMenuItems>(
                     iconColor: Colors.white,
@@ -383,24 +480,27 @@ class _DashboardState extends State<Dashboard> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Total Balance",
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white),
-                              ),
-                              Text(
-                                "₹$totalBalance",
-                                style: const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white),
-                              ),
-                            ],
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Total Balance",
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white),
+                                ),
+                                Text(
+                                  "₹$totalBalance",
+                                  style: const TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white),
+                                ),
+                              ],
+                            ),
                           ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
@@ -408,6 +508,7 @@ class _DashboardState extends State<Dashboard> {
                               ElevatedButton(
                                 onPressed: () {
                                   setState(() {
+                                    reinitializeDates();
                                     selectedTab = Tab.day;
                                     transactionGet();
                                   });
@@ -428,6 +529,7 @@ class _DashboardState extends State<Dashboard> {
                               ElevatedButton(
                                 onPressed: () {
                                   setState(() {
+                                    reinitializeDates();
                                     selectedTab = Tab.month;
                                     transactionGet();
                                   });
@@ -448,6 +550,7 @@ class _DashboardState extends State<Dashboard> {
                               ElevatedButton(
                                 onPressed: () {
                                   setState(() {
+                                    reinitializeDates();
                                     selectedTab = Tab.calendar;
                                     transactionGet();
                                   });
@@ -619,68 +722,81 @@ class _DashboardState extends State<Dashboard> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                isLoading?const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(100.0),
+                      child: CircularProgressIndicator(),
+                    )
+                ):
+                Column(
                   children: [
-                    Row(
-                      children: [
-                        Card(
-                          color: Constants.income10,
-                          child: const Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child:
-                            Icon(Icons.download, color: Colors.green),
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Card(
+                                color: Constants.income10,
+                                child: const Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child:
+                                  Icon(Icons.download, color: Colors.green),
+                                ),
+                              ),
+                              Column(
+                                children: [
+                                  const Text("Total Income"),
+                                  Text(
+                                    "₹$totalIncome",
+                                    style: const TextStyle(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        ),
-                        Column(
-                          children: [
-                            const Text("Total Income"),
-                            Text(
-                              "₹$totalIncome",
-                              style: const TextStyle(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Card(
-                          color: Constants.expense10,
-                          child: const Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Icon(Icons.upload, color: Colors.red),
+                          Row(
+                            children: [
+                              Card(
+                                color: Constants.expense10,
+                                child: const Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Icon(Icons.upload, color: Colors.red),
+                                ),
+                              ),
+                              Column(
+                                children: [
+                                  const Text("Total Expenses"),
+                                  Text(
+                                    "₹$totalExpense",
+                                    style: const TextStyle(
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        ),
-                        Column(
-                          children: [
-                            const Text("Total Expenses"),
-                            Text(
-                              "₹$totalExpense",
-                              style: const TextStyle(
-                                  color: Colors.red,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    const SizedBox(height: 10),
+                    if (selectedTab == Tab.day)
+                      SizedBox(
+                          width: MediaQuery.of(context).size.width,
+                          child: DayWiseTab(transactions: transactions, onRefresh: onRefresh,)
+                      ),
+                    if (selectedTab != Tab.day)
+                      SizedBox(
+                          width: MediaQuery.of(context).size.width,
+                          child: MonthlyGroupTab(transactions: groupedTransactions, onChangeTab: switchToDayTab,)
+                      )
                   ],
                 ),
-                const SizedBox(height: 20),
-                if (selectedTab == Tab.day)
-                SizedBox(
-                    width: MediaQuery.of(context).size.width,
-                    child: DayWiseTab(transactions: transactions, onRefresh: onRefresh,)
-                ),
-                if (selectedTab != Tab.day)
-                  SizedBox(
-                      width: MediaQuery.of(context).size.width,
-                      child: MonthlyGroupTab(transactions: groupedTransactions, onChangeTab: switchToDayTab,)
-                  )
               ],
             ),
           ),

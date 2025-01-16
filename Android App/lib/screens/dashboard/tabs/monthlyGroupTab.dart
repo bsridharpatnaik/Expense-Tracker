@@ -151,11 +151,11 @@ class _DayWiseTabState extends State<MonthlyGroupTab> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      transaction.title,
+                      transaction.party,
                       style:
                       const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                     ),
-                    Text(transaction.party,style:
+                    Text(titleParser(transaction.title),style:
                     const TextStyle(fontSize: 10,),),
                   ],
                 ),
@@ -178,5 +178,13 @@ class _DayWiseTabState extends State<MonthlyGroupTab> {
         ),
       ),
     );
+  }
+
+  String titleParser(String title) {
+    if (title.length > 25) {
+      return '${title.substring(0, 25)}...';
+    } else {
+      return title;
+    }
   }
 }

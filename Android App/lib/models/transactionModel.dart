@@ -58,16 +58,30 @@ class Transaction {
 }
 
 class FileInfo {
-  // Define properties for FileInfo here if necessary
-  // For now, we assume it's an empty object in the JSON
-  FileInfo();
+  String fileUuid;
+  String filename;
+  String uploadDate;
+
+  FileInfo({
+    required this.fileUuid,
+    required this.filename,
+    required this.uploadDate,
+  });
 
   factory FileInfo.fromJson(Map<String, dynamic> json) {
-    return FileInfo();
+    return FileInfo(
+      fileUuid: json['fileUuid'] ?? '',
+      filename: json['filename'] ?? '',
+      uploadDate: json['uploadDate'] ?? '',
+    );
   }
 
   Map<String, dynamic> toJson() {
-    return {};
+    return {
+      'fileUuid': fileUuid,
+      'filename': filename,
+      'uploadDate': uploadDate,
+    };
   }
 }
 
