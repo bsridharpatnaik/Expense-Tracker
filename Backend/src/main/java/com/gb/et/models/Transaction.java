@@ -12,6 +12,7 @@ import javax.persistence.*;
 import com.gb.et.others.FileInfoSerializer;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.envers.Audited;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import java.util.UUID;
 @Entity
 @Data
 @NoArgsConstructor
+@Audited
 public class Transaction {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
