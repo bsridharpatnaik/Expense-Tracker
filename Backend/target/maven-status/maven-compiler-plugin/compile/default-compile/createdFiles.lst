@@ -39,6 +39,7 @@ com/gb/et/controllers/GlobalExceptionHandler.class
 com/gb/et/repository/OrganizationRepository.class
 com/gb/et/models/User.class
 com/gb/et/models/FileEntity.class
+com/gb/et/controllers/UserController.class
 com/gb/et/data/FileStorageException.class
 com/gb/et/models/FolderEntity.class
 com/gb/et/data/ResourceNotFoundException.class

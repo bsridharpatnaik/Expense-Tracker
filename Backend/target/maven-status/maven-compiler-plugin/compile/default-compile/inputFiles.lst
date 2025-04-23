@@ -39,6 +39,7 @@
 /Users/bsridharpatnaik/GitHub/Expense-Tracker/Backend/src/main/java/com/gb/et/payload/response/JwtResponse.java
 /Users/bsridharpatnaik/GitHub/Expense-Tracker/Backend/src/main/java/com/gb/et/repository/HistoryRepo.java
 /Users/bsridharpatnaik/GitHub/Expense-Tracker/Backend/src/main/java/com/gb/et/controllers/VaultController.java
+/Users/bsridharpatnaik/GitHub/Expense-Tracker/Backend/src/main/java/com/gb/et/controllers/UserController.java
 /Users/bsridharpatnaik/GitHub/Expense-Tracker/Backend/src/main/java/com/gb/et/data/HistoryTypeEnum.java
 /Users/bsridharpatnaik/GitHub/Expense-Tracker/Backend/src/main/java/com/gb/et/others/DoubleTwoDigitDecimalSerializer.java
 /Users/bsridharpatnaik/GitHub/Expense-Tracker/Backend/src/main/java/com/gb/et/SpringBootSecurityJwtApplication.java
