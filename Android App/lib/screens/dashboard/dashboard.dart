@@ -12,6 +12,7 @@ import '../../models/groupedSummaryModel.dart';
 import '../../models/transactionModel.dart';
 import '../documentationVaultScreen.dart';
 import '../historyScreen.dart';
+import '../login.dart';
 import '../webview.dart';
 
 class Dashboard extends StatefulWidget {
@@ -69,8 +70,7 @@ class _DashboardState extends State<Dashboard> {
   createPdf() async {
     BuildConfig.appIsActive = true;
     try{
-      await requestManageExternalStoragePermission();
-      await requestStoragePermission();
+      await requestPermission();
       await createTransactionPdf(transactions);
     }finally{
       BuildConfig.appIsActive = false;
@@ -193,6 +193,25 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
+  Map<String, DateTime> getMonthDateRange(String yearMonth) {
+    // Parse the input string
+    final parts = yearMonth.split('-');
+    final year = int.parse(parts[0]);
+    final month = int.parse(parts[1]);
+
+    // Start of the month
+    final startDate = DateTime(year, month, 1);
+
+    // End of the month: the day before the 1st of next month
+    final endDate = DateTime(year, month + 1, 1).subtract(Duration(days: 1));
+
+    return {
+      'startDate': startDate,
+      'endDate': endDate,
+    };
+  }
+
+
   transactionGet() async {
     setState(() {
       isLoading = true;
@@ -206,6 +225,7 @@ class _DashboardState extends State<Dashboard> {
       Map<String, dynamic> respJson =
       await HttpRequestHandler(context).transactionGet(dateOrMonth, _searchController.text);
       if (respJson['status'] == 200) {
+        print(respJson);
         setState(() {
           transactions = TransactionResponse.fromJson(respJson);
           totalBalance = transactions.balance.toString();
@@ -217,8 +237,12 @@ class _DashboardState extends State<Dashboard> {
     }
     if(selectedTab == Tab.month){
       String dateOrMonth = DateFormat('yyyy-MM').format(selectedDate);
+      Map<String, DateTime> dateRange = getMonthDateRange(dateOrMonth);
+      String start = DateFormat('yyyy-MM-dd').format(dateRange['startDate']!);
+      String end = DateFormat('yyyy-MM-dd').format(dateRange['endDate']!);
       Map<String, dynamic> respJson =
-      await HttpRequestHandler(context).monthlyTransactionGet(dateOrMonth, _searchController.text);
+      // await HttpRequestHandler(context).monthlyTransactionGet(dateOrMonth, _searchController.text);
+      await HttpRequestHandler(context).dateRangeTransactionGet(start, end, _searchController.text);
       if (respJson['status'] == 200) {
         setState(() {
           groupedTransactions = GroupedSummary.fromJson(respJson);
@@ -280,11 +304,13 @@ class _DashboardState extends State<Dashboard> {
               ),
               onPressed: () {
                 Navigator.pop(context);
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (context) => WebViewPage(),
-                  ),
-                );
+                if(BuildConfig.isWeb()){
+                  Navigator.pushReplacement(context,
+                      MaterialPageRoute(builder: (context) => const LoginPage()));
+                }else{
+                  Navigator.pushReplacement(context,
+                      MaterialPageRoute(builder: (context) => WebViewPage()));
+                }
               },
               child: const Text(
                 'Yes',
@@ -308,11 +334,13 @@ class _DashboardState extends State<Dashboard> {
   }
 
   logout(){
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => WebViewPage(),
-      ),
-    );
+    if(BuildConfig.isWeb()){
+      Navigator.pushReplacement(context,
+          MaterialPageRoute(builder: (context) => const LoginPage()));
+    }else{
+      Navigator.pushReplacement(context,
+          MaterialPageRoute(builder: (context) => WebViewPage()));
+    }
   }
 
   @override
@@ -446,10 +474,11 @@ class _DashboardState extends State<Dashboard> {
                         value: AppBarMenuItems.pdfExport,
                         child: Text('Export to PDF'),
                       ),
-                      const PopupMenuItem<AppBarMenuItems>(
-                        value: AppBarMenuItems.documentationVault,
-                        child: Text('Documentation Vault'),
-                      ),
+                      if (!BuildConfig.webPlatform)
+                        const PopupMenuItem<AppBarMenuItems>(
+                          value: AppBarMenuItems.documentationVault,
+                          child: Text('Documentation Vault'),
+                        ),
                       const PopupMenuItem<AppBarMenuItems>(
                         value: AppBarMenuItems.history,
                         child: Text('History'),
@@ -466,6 +495,7 @@ class _DashboardState extends State<Dashboard> {
           ),
         ),
         body: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
           child: SizedBox(
             width: MediaQuery.of(context).size.width,
             child: Column(
@@ -805,7 +835,7 @@ class _DashboardState extends State<Dashboard> {
           visible: selectedTab == Tab.day,
           child: FloatingActionButton(
             onPressed: () {
-              TransactionWidgets(onRefresh,context).addTransactionSheet(null);
+              TransactionWidgets(onRefresh,context).addTransactionSheet(null, selectedDate);
             },
             backgroundColor: Colors.green,
             child: const Icon(

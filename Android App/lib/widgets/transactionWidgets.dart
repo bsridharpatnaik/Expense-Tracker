@@ -22,8 +22,8 @@ class TransactionWidgets {
   transactionHistoryCard(Transaction transaction) {
     double width = MediaQuery.of(context).size.width;
     return Card(
+      color: transaction.transactionType == 'INCOME' ? Constants.income10: Constants.expense10,
       child: Container(
-        color: Constants.gray15,
         padding: const EdgeInsets.all(10),
         width: width,
         child: Row(
@@ -32,7 +32,7 @@ class TransactionWidgets {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: Constants.gray30,
+                  backgroundColor: Colors.white,
                   child:
                       Text(transaction.transactionType == 'INCOME' ? 'I' : 'E'),
                 ),
@@ -48,7 +48,7 @@ class TransactionWidgets {
                           fontSize: 16, fontWeight: FontWeight.w700),
                     ),
                     SizedBox(
-                      width: width*.64,
+                      width: width*.55,
                         child: Text(transaction.title)),
                   ],
                 ),
@@ -58,10 +58,10 @@ class TransactionWidgets {
               children: [
                 Text(
                   '₹${transaction.amount.toString()}',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Colors.green),
+                      color: transaction.transactionType == 'INCOME' ? Colors.green : Colors.red),
                 ),
                 Text(DateTimeFormatter()
                     .formatTime(transaction.modificationDate))
@@ -72,14 +72,18 @@ class TransactionWidgets {
       ),
     );
   }
-  addTransactionSheet(Transaction? transaction) {
+  addTransactionSheet(Transaction? transaction, DateTime selectedDate) {
     String transactionType = "income";
     TextEditingController titleController = TextEditingController();
     TextEditingController amountController = TextEditingController();
     TextEditingController dateController = TextEditingController();
     TextEditingController selectPartyController = TextEditingController();
-    DateTime? selectedDate = DateTime.now();
     bool editMode = false;
+    // If selectedDate is in the future, set it to current date
+    DateTime now = DateTime.now();
+    if (selectedDate.isAfter(now)) {
+      selectedDate = now;
+    }
     if (transaction != null) {
       titleController.text = transaction.title;
       amountController.text = transaction.amount.toString();
@@ -107,7 +111,7 @@ class TransactionWidgets {
             _files.add(File(result.files.single.path!)); // Store the file
             _fileNames.add(result.files.single.name); // Store the file name
           });
-          var fileMap = await HttpRequestHandler(context).fileUpload(_file!);
+          var fileMap = await HttpRequestHandler(context).fileUpload(_file);
           if (fileMap != null) {
             fileMaps.add(fileMap);
           }
@@ -128,17 +132,15 @@ class TransactionWidgets {
         var image = await ImagePicker()
             .pickImage(source: ImageSource.camera, imageQuality: 60);
         if (image != null) {
-          if (image != null) {
-            setStateModal(() {
-              _files.add(File(image.path));
-              _fileNames.add(path.basename(File(image.path)!.path));
-            });
-            var fileMap = await HttpRequestHandler(context).fileUpload(File(image.path)!);
-            if (fileMap != null) {
-              fileMaps.add(fileMap);
-            }
+          setStateModal(() {
+            _files.add(File(image.path));
+            _fileNames.add(path.basename(File(image.path)!.path));
+          });
+          var fileMap = await HttpRequestHandler(context).fileUpload(File(image.path)!);
+          if (fileMap != null) {
+            fileMaps.add(fileMap);
           }
-        } else {
+                } else {
           // Toaster.e(_context, message: "No image is scanned.");
         }
         return null;
@@ -288,12 +290,12 @@ class TransactionWidgets {
                             vertical: 10, horizontal: 12),
                       ),
                       onTap: () async {
-                        selectedDate = await showDatePicker(
+                        selectedDate = (await showDatePicker(
                           context: context,
-                          initialDate: DateTime.now(),
+                          initialDate: selectedDate,
                           firstDate: DateTime(2000),
                           lastDate: DateTime(2100),
-                        );
+                        ))!;
                         setStateModal(() {
                           dateController.text =
                               DateFormat('dd/MM/yyyy').format(selectedDate!);
@@ -380,7 +382,7 @@ class TransactionWidgets {
                       dashPattern: const [6, 3],
                       child: GestureDetector(
                         onTap: () {
-                          _pickFile(setStateModal);
+                          // _pickFile(setStateModal);
                         },
                         child: Container(
                           width: double.infinity,
@@ -567,7 +569,6 @@ class TransactionWidgets {
                                   .format(selectedDate!),
                               "files": fileMaps
                             };
-                            print("body:$body");
                             var respJson = await HttpRequestHandler(context)
                                 .updateTransaction(
                                     body, transaction!.id.toString());
@@ -636,7 +637,7 @@ class TransactionWidgets {
                                 child: const Icon(Icons.create_outlined),
                                 onTap: () {
                                   Navigator.pop(context);
-                                  addTransactionSheet(transaction);
+                                  addTransactionSheet(transaction, DateTime.now());
                                 },
                               ),
                               GestureDetector(

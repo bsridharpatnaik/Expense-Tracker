@@ -92,6 +92,7 @@ class TransactionResponse {
   final int totalExpense;
   final int balance;
   final String username;
+  final List<Transaction> allTransactions;
 
   TransactionResponse({
     required this.transactionsByType,
@@ -100,6 +101,7 @@ class TransactionResponse {
     required this.totalExpense,
     required this.balance,
     required this.username,
+    required this.allTransactions,
   });
 
   factory TransactionResponse.fromJson(Map<String, dynamic> json) {
@@ -114,6 +116,12 @@ class TransactionResponse {
       transactionsByType[key] = list.map((item) => Transaction.fromJson(item)).toList();
     });
 
+    List<Transaction> allTransactions = [
+      ...transactionsByType['EXPENSE'] ?? [],
+      ...transactionsByType['INCOME'] ?? [],
+    ];
+    allTransactions.sort((a, b) => b.creationDate.compareTo(a.creationDate));
+
     return TransactionResponse(
       transactionsByType: transactionsByType,
       carryForward: json['carryForward']??0,
@@ -121,6 +129,7 @@ class TransactionResponse {
       totalExpense: json['totalExpense']??0,
       balance: json['balance']??0,
       username: json['username']??'',
+      allTransactions: allTransactions,
     );
   }
 
@@ -134,6 +143,7 @@ class TransactionResponse {
       'totalExpense': totalExpense,
       'balance': balance,
       'username': username,
+      'allTransactions': allTransactions.map((e) => e.toJson()).toList(),
     };
   }
 }

@@ -5,6 +5,9 @@ import 'package:dotted_border/dotted_border.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
 import '../build_config.dart';
 import '../constants.dart';
 import '../handlers/http_request_handler.dart';
@@ -26,6 +29,7 @@ class _DocumentationVaultState extends State<DocumentationVault> {
   double width = 0;
   Folder folder = Folder.fromJson({});
   TextEditingController folderNameController = TextEditingController();
+  bool kIsWeb = false;
   @override
   void initState() {
     // TODO: implement initState
@@ -35,30 +39,52 @@ class _DocumentationVaultState extends State<DocumentationVault> {
 
   Future<void> saveBlobToDownloads(Uint8List blobData, String fileName) async {
     try {
-      final Directory downloadsDirectory =
-          Directory('/storage/emulated/0/Download');
-      String filePath = '${downloadsDirectory.path}/$fileName';
-      File file = File(filePath);
+      Directory? targetDirectory;
 
-      // Check if a file with the same name already exists
+      if (Platform.isAndroid) {
+        // Check and request storage permission if needed
+        if (await Permission.manageExternalStorage.request().isGranted ||
+            await Permission.storage.request().isGranted) {
+          targetDirectory = Directory('/storage/emulated/0/Download');
+        } else {
+          print('Storage permission denied. Cannot save file.');
+          return;
+        }
+      } else if (Platform.isIOS) {
+        targetDirectory = await getApplicationDocumentsDirectory();
+      }
+
+      if (targetDirectory == null) {
+        print('Failed to get target directory.');
+        return;
+      }
+
+      // Generate a unique file name if needed
+      String filePath = '${targetDirectory.path}/$fileName';
+      File file = File(filePath);
       int counter = 1;
       while (file.existsSync()) {
-        // Modify the file name with a counter (e.g., "filename(1).ext")
         final nameWithoutExtension = fileName.split('.').first;
-        final extension =
-            fileName.contains('.') ? '.${fileName.split('.').last}' : '';
-        filePath =
-            '${downloadsDirectory.path}/$nameWithoutExtension($counter)$extension';
+        final extension = fileName.contains('.') ? '.${fileName.split('.').last}' : '';
+        filePath = '${targetDirectory.path}/$nameWithoutExtension($counter)$extension';
         file = File(filePath);
         counter++;
       }
 
       // Write the file
       await file.writeAsBytes(blobData);
-      print('File saved to $filePath');
-      NotificationHandler.showDefault("File downloaded.");
+      print('File saved at: $filePath');
+
+      // Open share sheet on iOS to let the user move it to Downloads
+      if (Platform.isIOS) {
+        await Share.shareXFiles([XFile(filePath)]);
+        NotificationHandler.showDefault("File successfully downloaded.");
+      }else{
+        NotificationHandler.showDefault("File successfully downloaded in downloads folder.");
+      }
     } catch (e) {
-      NotificationHandler.showDefault('Error saving file: $e');
+      print('Error saving file: $e');
+      NotificationHandler.showError('Error saving File: $e');
     }
   }
 
@@ -262,6 +288,7 @@ class _DocumentationVaultState extends State<DocumentationVault> {
 
   String? _fileName;
   File? _file;
+  Uint8List? _fileBytes;
   Future<void> _pickFile(StateSetter setStateModal) async {
     BuildConfig.appIsActive = true;
     try {
@@ -274,11 +301,13 @@ class _DocumentationVaultState extends State<DocumentationVault> {
         setStateModal(() {
           _file = File(result.files.single.path!); // Store the file
           _fileName = result.files.single.name; // Store the file name
+          _fileBytes = result.files.single.bytes;
         });
       } else {
         setStateModal(() {
           _file = null; // Reset if no file is selected
           _fileName = null;
+          _fileBytes = null;
         });
       }
     } finally {
@@ -292,13 +321,11 @@ class _DocumentationVaultState extends State<DocumentationVault> {
       var image = await ImagePicker()
           .pickImage(source: ImageSource.camera, imageQuality: 60);
       if (image != null) {
-        if (image != null) {
-          setState(() {
-            _file = File(image.path);
-            _fileName = path.basename(_file!.path);
-          });
-        }
-      } else {
+        setState(() {
+          _file = File(image.path);
+          _fileName = path.basename(_file!.path);
+        });
+            } else {
         // Toaster.e(_context, message: "No image is scanned.");
       }
       return null;
@@ -429,6 +456,9 @@ class _DocumentationVaultState extends State<DocumentationVault> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext context) {
+        // Get width here once
+        final double width = MediaQuery.of(context).size.width;
+
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setStateModal) {
             return Padding(
@@ -439,7 +469,7 @@ class _DocumentationVaultState extends State<DocumentationVault> {
                   right: 16,
                 ),
                 child: SizedBox(
-                  width: MediaQuery.of(context).size.width,
+                  width: width, // Use the width variable
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -474,7 +504,7 @@ class _DocumentationVaultState extends State<DocumentationVault> {
                       DottedBorder(
                         color: Colors.grey,
                         strokeWidth: 1,
-                        dashPattern: [6, 3],
+                        dashPattern: const [6, 3],
                         child: GestureDetector(
                           onTap: () {
                             _pickFile(setStateModal);
@@ -502,20 +532,32 @@ class _DocumentationVaultState extends State<DocumentationVault> {
                       ),
                       // Display file name and thumbnail if a file is selected
                       const SizedBox(height: 5),
-                      if (_file != null) ...[
+                      if (_file != null) ...[ // _file is now XFile?
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Row(
                               children: [
-                                if (_fileName!.endsWith('.jpg') ||
-                                    _fileName!.endsWith('.png'))
-                                  Image.file(
-                                    _file!,
-                                    width: 50,
-                                    height: 50,
-                                    fit: BoxFit.cover,
-                                  ),
+                                // Conditional rendering for image thumbnail
+                                if ((_fileName!.endsWith('.jpg') ||
+                                    _fileName!.endsWith('.png')))
+                                  if (kIsWeb) // For web, use Image.memory with bytes
+                                    if (_fileBytes != null)
+                                      Image.memory(
+                                        _fileBytes!,
+                                        width: 50,
+                                        height: 50,
+                                        fit: BoxFit.cover,
+                                      )
+                                    else // Fallback if bytes are null (shouldn't happen with correct _pickFile)
+                                      const Icon(Icons.image_outlined, size: 50)
+                                  else // For non-web, use Image.file (requires dart:io)
+                                    Image.file(
+                                      File(_file!.path), // Convert XFile.path to File
+                                      width: 50,
+                                      height: 50,
+                                      fit: BoxFit.cover,
+                                    ),
                                 const SizedBox(width: 5),
                                 SizedBox(
                                   width: width * .73,
@@ -534,6 +576,7 @@ class _DocumentationVaultState extends State<DocumentationVault> {
                                 setStateModal(() {
                                   _file = null;
                                   _fileName = null;
+                                  _fileBytes = null; // Clear bytes as well
                                 });
                               },
                             )
@@ -557,10 +600,17 @@ class _DocumentationVaultState extends State<DocumentationVault> {
                             style: TextStyle(color: Colors.white),
                           ),
                           onPressed: () async {
-                            await HttpRequestHandler(context)
-                                .vaultFileUpload(_file!, folder.id.toString());
-                            Navigator.pop(context);
-                            folderGet();
+                            if (_file != null) { // Only proceed if a file is selected
+                              await HttpRequestHandler(context)
+                                  .vaultFileUpload(_file!, folder.id.toString());
+                              Navigator.pop(context);
+                              folderGet();
+                            } else {
+                              // Optionally show a message if no file is selected
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Please select a file to upload')),
+                              );
+                            }
                           },
                         ),
                       ),
@@ -755,6 +805,7 @@ class _DocumentationVaultState extends State<DocumentationVault> {
   @override
   Widget build(BuildContext context) {
     width = MediaQuery.of(context).size.width;
+    kIsWeb = BuildConfig.isWeb();
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(

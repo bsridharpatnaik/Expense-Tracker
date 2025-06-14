@@ -2,11 +2,15 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bot_toast/bot_toast.dart';
+import 'package:expense_tracker/screens/login.dart';
 import 'package:expense_tracker/screens/spashscreen.dart';
 import 'package:expense_tracker/screens/webview.dart';
+import 'package:expense_tracker/screens/webview_iframe.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 import 'build_config.dart';
+import 'handlers/SharedPreferencesHandler.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,7 +22,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Evergreen City',
       builder: BotToastInit(),
       navigatorObservers: [
         BotToastNavigatorObserver(), // Existing observer
@@ -75,9 +79,34 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     return const SplashScreen();
   }
 
-  initApplication() {
-    Navigator.pushReplacement(context,
-        MaterialPageRoute(builder: (context) => WebViewPage()));
+  initApplication() async {
+    SharedPreferencesHandler sharedPreferencesHandler =
+    new SharedPreferencesHandler();
+    BuildConfig.webPlatform = BuildConfig.isWeb();
+    bool debugMode =
+        await sharedPreferencesHandler.getBool(BuildConfig.debugModeKey);
+    if (debugMode) {
+      BuildConfig.serverUrl = BuildConfig.serverTestUrl;
+      Fluttertoast.showToast(
+        msg: 'Running in development version.',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+      );
+    } else {
+      BuildConfig.serverUrl = BuildConfig.serverProdUrl;
+    }
+    // Navigate to the appropriate WebView
+    if (BuildConfig.isWeb()) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const WebViewIframePage()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => WebViewPage()),
+      );
+    }
   }
 
 }

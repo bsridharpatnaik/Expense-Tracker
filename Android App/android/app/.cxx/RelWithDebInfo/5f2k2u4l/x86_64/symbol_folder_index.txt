@@ -1,0 +1,1 @@
+/Users/ronitmajumder/Desktop/Raj/KR_Tech/Expense-Tracker/Android App/build/app/intermediates/cxx/RelWithDebInfo/5f2k2u4l/obj/x86_64

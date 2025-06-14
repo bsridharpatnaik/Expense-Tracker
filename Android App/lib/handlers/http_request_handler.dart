@@ -46,6 +46,7 @@ class HttpRequestHandler {
       return {};
     }
     String signUrl = '${BuildConfig.serverUrl}/api/auth/login';
+    print(signUrl);
     var body = {
       "username": userName,
       "password": password,
@@ -53,6 +54,7 @@ class HttpRequestHandler {
     try {
       http.Response response = await http.post(Uri.parse(signUrl),
           headers: headers, body: jsonEncode(body));
+      print("response: ${response.body}");
       Map<String, dynamic> respJson = jsonDecode(response.body);
       if (response.statusCode == 200) {
         respJson['status'] = 200;
@@ -74,6 +76,7 @@ class HttpRequestHandler {
     if(!await _checkNetwork()){
       return {};
     }
+    // dateOrMonth = dateOrMonth.replaceAll('-', '');
     String transactionUrl =
         '${BuildConfig.serverUrl}/api/dashboard/summary?dateOrMonth=$dateOrMonth&party=$party';
     try {
@@ -102,6 +105,7 @@ class HttpRequestHandler {
     if(!await _checkNetwork()){
       return {};
     }
+    // dateOrMonth = dateOrMonth.replaceAll('-', '');
     String transactionUrl =
         '${BuildConfig.serverUrl}/api/dashboard/summary/grouped?startDate=$dateOrMonth&party=$party';
     try {
@@ -469,6 +473,29 @@ class HttpRequestHandler {
     } else {
       NotificationHandler.showErrorNotification(json.decode(response.body)["message"]);
       throw Exception("Failed to load blob data");
+    }
+  }
+
+  Future<bool> getUserStatus() async {
+    if(!await _checkNetwork()){
+      return false;
+    }
+    String url = '${BuildConfig.serverUrl}/user/status';
+    try {
+      http.Response response = await http.get(
+        Uri.parse(url),
+        headers: headers,
+      );
+      print("response.body: ${response.body} ${response.statusCode}");
+      if (response.statusCode == 200) {
+        bool respJson = jsonDecode(response.body);
+        return respJson;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      print("Error in get usr status: $e");
+      return false;
     }
   }
 }

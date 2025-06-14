@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
-import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 class ExcelFileRenderer extends StatelessWidget {

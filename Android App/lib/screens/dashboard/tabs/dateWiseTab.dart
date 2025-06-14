@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../constants.dart';
 import '../../../models/transactionModel.dart';
 import '../../../widgets/transactionWidgets.dart';
 
@@ -36,93 +35,116 @@ class _DayWiseTabState extends State<DayWiseTab> {
                 const SizedBox(
                   height: 15,
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.start,
+                //   children: [
+                //     ElevatedButton(
+                //       onPressed: () {
+                //         setState(() {
+                //           selectedTransactionTab = TransactionTab.expenses;
+                //         });
+                //       },
+                //       style: ElevatedButton.styleFrom(
+                //           backgroundColor: selectedTransactionTab ==
+                //               TransactionTab.expenses
+                //               ? Constants.selectedTab
+                //               : Constants.expense10),
+                //       child: const Text(
+                //         "Expenses",
+                //         style: TextStyle(color: Colors.red),
+                //       ),
+                //     ),
+                //     const SizedBox(
+                //       width: 10,
+                //     ),
+                //     ElevatedButton(
+                //       onPressed: () {
+                //         setState(() {
+                //           selectedTransactionTab = TransactionTab.income;
+                //         });
+                //       },
+                //       style: ElevatedButton.styleFrom(
+                //           backgroundColor: selectedTransactionTab ==
+                //               TransactionTab.income
+                //               ? Constants.selectedTab
+                //               : Constants.income10),
+                //       child: const Text("Income"),
+                //     ),
+                //   ],
+                // ),
+                // const SizedBox(height: 10),
+                // if (selectedTransactionTab == TransactionTab.income)
+                //   Column(
+                //     children: [
+                //       ...List.generate(
+                //           transactions.transactionsByType['INCOME']!.length,
+                //               (index) {
+                //             return GestureDetector(
+                //                 onTap: () => TransactionWidgets(widget.onRefresh,context)
+                //                     .editTransactionSheet(transactions
+                //                     .transactionsByType['INCOME']![index]),
+                //                 child: TransactionWidgets(widget.onRefresh,context)
+                //                     .transactionHistoryCard(transactions
+                //                     .transactionsByType['INCOME']![index]));
+                //           }),
+                //       if (transactions
+                //           .transactionsByType['INCOME']!.isEmpty)
+                //         const Center(
+                //           child: Text(
+                //             "No Transaction",
+                //             style: TextStyle(color: Colors.grey),
+                //           ),
+                //         ),
+                //     ],
+                //   ),
+                // if (selectedTransactionTab == TransactionTab.expenses)
+                //   Column(
+                //     children: [
+                //       ...List.generate(
+                //           transactions.transactionsByType['EXPENSE']!
+                //               .length, (index) {
+                //         return GestureDetector(
+                //             onTap: () => TransactionWidgets(widget.onRefresh,context)
+                //                 .editTransactionSheet(transactions
+                //                 .transactionsByType['EXPENSE']![index]),
+                //             child: TransactionWidgets(widget.onRefresh,context)
+                //                 .transactionHistoryCard(
+                //                 transactions.transactionsByType[
+                //                 'EXPENSE']![index]));
+                //       }),
+                //       if (transactions
+                //           .transactionsByType['EXPENSE']!.isEmpty)
+                //         const Center(
+                //           child: Text(
+                //             "No Transaction",
+                //             style: TextStyle(color: Colors.grey),
+                //           ),
+                //         ),
+                //     ],
+                //   ),
+                Column(
                   children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          selectedTransactionTab = TransactionTab.expenses;
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: selectedTransactionTab ==
-                              TransactionTab.expenses
-                              ? Constants.selectedTab
-                              : Constants.expense10),
-                      child: const Text(
-                        "Expenses",
-                        style: TextStyle(color: Colors.red),
+                    ...List.generate(
+                        transactions.allTransactions.length,
+                            (index) {
+                          return GestureDetector(
+                              onTap: () => TransactionWidgets(widget.onRefresh,context)
+                                  .editTransactionSheet(transactions
+                                  .allTransactions[index]),
+                              child: TransactionWidgets(widget.onRefresh,context)
+                                  .transactionHistoryCard(transactions
+                                  .allTransactions[index]));
+                        }),
+                    if (transactions
+                        .allTransactions!.isEmpty)
+                      const Center(
+                        child: Text(
+                          "No Transaction",
+                          style: TextStyle(color: Colors.grey),
+                        ),
                       ),
-                    ),
-                    const SizedBox(
-                      width: 10,
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          selectedTransactionTab = TransactionTab.income;
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: selectedTransactionTab ==
-                              TransactionTab.income
-                              ? Constants.selectedTab
-                              : Constants.income10),
-                      child: const Text("Income"),
-                    ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                if (selectedTransactionTab == TransactionTab.income)
-                  Column(
-                    children: [
-                      ...List.generate(
-                          transactions.transactionsByType['INCOME']!.length,
-                              (index) {
-                            return GestureDetector(
-                                onTap: () => TransactionWidgets(widget.onRefresh,context)
-                                    .editTransactionSheet(transactions
-                                    .transactionsByType['INCOME']![index]),
-                                child: TransactionWidgets(widget.onRefresh,context)
-                                    .transactionHistoryCard(transactions
-                                    .transactionsByType['INCOME']![index]));
-                          }),
-                      if (transactions
-                          .transactionsByType['INCOME']!.isEmpty)
-                        const Center(
-                          child: Text(
-                            "No Transaction",
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                    ],
-                  ),
-                if (selectedTransactionTab == TransactionTab.expenses)
-                  Column(
-                    children: [
-                      ...List.generate(
-                          transactions.transactionsByType['EXPENSE']!
-                              .length, (index) {
-                        return GestureDetector(
-                            onTap: () => TransactionWidgets(widget.onRefresh,context)
-                                .editTransactionSheet(transactions
-                                .transactionsByType['EXPENSE']![index]),
-                            child: TransactionWidgets(widget.onRefresh,context)
-                                .transactionHistoryCard(
-                                transactions.transactionsByType[
-                                'EXPENSE']![index]));
-                      }),
-                      if (transactions
-                          .transactionsByType['EXPENSE']!.isEmpty)
-                        const Center(
-                          child: Text(
-                            "No Transaction",
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                    ],
-                  ),
                 const SizedBox(height: 100),
               ],
             ),

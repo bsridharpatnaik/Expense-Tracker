@@ -1,0 +1,2 @@
+/Users/ronitmajumder/Desktop/Raj/KR_Tech/Expense-Tracker/Android App/android/app/.cxx/Debug/4j2h3f23/x86/CMakeFiles/edit_cache.dir
+/Users/ronitmajumder/Desktop/Raj/KR_Tech/Expense-Tracker/Android App/android/app/.cxx/Debug/4j2h3f23/x86/CMakeFiles/rebuild_cache.dir

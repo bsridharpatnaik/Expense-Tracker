@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
 import 'dart:typed_data';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../build_config.dart';
@@ -38,49 +41,86 @@ String? inferMimeType(Uint8List blobData) {
   return null; // Unknown type
 }
 
-Future<void> saveBlobToDownloads(
-    Uint8List blobData, String fileName) async {
+Future<void> saveBlobToDownloads(Uint8List blobData, String fileName) async {
   try {
-    final Directory downloadsDirectory = Directory('/storage/emulated/0/Download');
-    String filePath = '${downloadsDirectory.path}/$fileName';
-    File file = File(filePath);
+    Directory? targetDirectory;
 
-    // Check if a file with the same name already exists
+    if (Platform.isAndroid) {
+      // Check and request storage permission if needed
+      if (await Permission.manageExternalStorage.request().isGranted ||
+          await Permission.storage.request().isGranted) {
+        targetDirectory = Directory('/storage/emulated/0/Download');
+      } else {
+        print('Storage permission denied. Cannot save file.');
+        return;
+      }
+    } else if (Platform.isIOS) {
+      targetDirectory = await getApplicationDocumentsDirectory();
+    }
+
+    if (targetDirectory == null) {
+      print('Failed to get target directory.');
+      return;
+    }
+
+    // Generate a unique file name if needed
+    String filePath = '${targetDirectory.path}/$fileName';
+    File file = File(filePath);
     int counter = 1;
     while (file.existsSync()) {
-      // Modify the file name with a counter (e.g., "filename(1).ext")
       final nameWithoutExtension = fileName.split('.').first;
       final extension = fileName.contains('.') ? '.${fileName.split('.').last}' : '';
-      filePath = '${downloadsDirectory.path}/$nameWithoutExtension($counter)$extension';
+      filePath = '${targetDirectory.path}/$nameWithoutExtension($counter)$extension';
       file = File(filePath);
       counter++;
     }
+
+    // Write the file
     await file.writeAsBytes(blobData);
-    NotificationHandler.showDefault("File downloaded.");
+    print('File saved at: $filePath');
+
+    // Open share sheet on iOS to let the user move it to Downloads
+    if (Platform.isIOS) {
+      await Share.shareXFiles([XFile(filePath)]);
+      NotificationHandler.showDefault("File successfully downloaded.");
+    }else{
+      NotificationHandler.showDefault("File successfully downloaded in downloads folder.");
+    }
   } catch (e) {
-    NotificationHandler.showDefault('Error saving file: $e');
-  }
-}
-
-
-Future<void> requestStoragePermission() async {
-  final permissionStatus = await Permission.storage.status;
-  if (permissionStatus.isDenied) {
-    await Permission.storage.request();
-  } else if (permissionStatus.isPermanentlyDenied) {
-    await openAppSettings();
-  } else {
+    print('Error saving file: $e');
+    NotificationHandler.showError('Error saving File: $e');
   }
 }
 
 Future<void> requestManageExternalStoragePermission() async {
-  if (await Permission.manageExternalStorage.request().isGranted) {
+  if (await Permission.storage.request().isGranted) {
     print('Storage permission granted');
   } else {
     print('Storage permission denied, opening app settings...');
-    // Guide the user to open app settings to manually enable the permission
     await openAppSettings();
   }
+}
+
+Future<void> requestPermission() async {
+  if (Platform.isAndroid) {
+    // Android 30+ needs manageExternalStorage, else use storage permission
+    if (await Permission.manageExternalStorage.request().isGranted ||
+        await Permission.storage.request().isGranted) {
+      print('Storage permission granted');
+    } else {
+      print('Storage permission denied, opening app settings...');
+      await openAppSettings();
+    }
+  }
+  // else if (Platform.isIOS) {
+  //   // iOS needs photo library permission
+  //   if (await Permission.photos.request().isGranted) {
+  //     print('Photo library access granted');
+  //   } else {
+  //     print('Photo library access denied, opening app settings...');
+  //     await openAppSettings();
+  //   }
+  // }
 }
 
 void showBlobDialog(
@@ -117,8 +157,7 @@ void showBlobDialog(
                     onPressed: () async {
                       BuildConfig.appIsActive = true;
                       try{
-                        await requestStoragePermission();
-                        await requestManageExternalStoragePermission();
+                        await requestPermission();
                         await saveBlobToDownloads(blobData, fileName);
                       }finally{
                         BuildConfig.appIsActive = false;
