@@ -427,7 +427,6 @@ class _DocumentationVaultState extends State<DocumentationVault> {
                             };
                             var respJson = await HttpRequestHandler(context)
                                 .addFolder(body);
-                            print("file resp: $respJson");
                             if (respJson['status'] == 200) {
                               Navigator.pop(context);
                               folderGet();

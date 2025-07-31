@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../build_config.dart';
 import '../screens/login.dart';
@@ -54,7 +55,6 @@ class HttpRequestHandler {
     try {
       http.Response response = await http.post(Uri.parse(signUrl),
           headers: headers, body: jsonEncode(body));
-      print("response: ${response.body}");
       Map<String, dynamic> respJson = jsonDecode(response.body);
       if (response.statusCode == 200) {
         respJson['status'] = 200;
@@ -189,6 +189,44 @@ class HttpRequestHandler {
     }
   }
 
+  Future<Map<String, dynamic>?> fileUploadWeb(PlatformFile file) async {
+    if(!await _checkNetwork()){
+      return {};
+    }
+    String url = '${BuildConfig.serverUrl}/api/file/upload';
+    try {
+      var uri = Uri.parse(url);
+      var request = http.MultipartRequest('POST', uri);
+
+      if (file.bytes != null) {
+        var multipartFile = http.MultipartFile.fromBytes(
+          'file', // 'file' is the name of the field expected by the server
+          file.bytes!,
+          filename: file.name,
+        );
+        request.headers.addAll(headers);
+        request.files.add(multipartFile);
+      } else {
+        return null; // Handle case where bytes are null
+      }
+
+      var response = await request.send();
+      var responseString = await response.stream.bytesToString();
+      var jsonResponse = json.decode(responseString);
+      if (response.statusCode == 200) {
+        return jsonResponse;
+      } else if (response.statusCode == 401) {
+        signOut(); // Assuming signOut is defined elsewhere in your HttpRequestHandler or accessible
+        return null;
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print('Error uploading web file: $e');
+      return null;
+    }
+  }
+
   postTransaction(var body) async {
     if(!await _checkNetwork()){
       return {};
@@ -219,6 +257,7 @@ class HttpRequestHandler {
     }
     String url = '${BuildConfig.serverUrl}/api/transaction/$id';
     try {
+      print("body:${jsonEncode(body)}");
       http.Response response = await http.put(Uri.parse(url),
           headers: headers, body: jsonEncode(body));
       Map<String, dynamic> respJson = jsonDecode(response.body);
@@ -449,7 +488,6 @@ class HttpRequestHandler {
       Uri.parse(url),
       headers: headers,
     );
-    print(response.statusCode);
     if (response.statusCode == 200) {
       return response.bodyBytes; // Blob data
     } else {
@@ -467,7 +505,6 @@ class HttpRequestHandler {
       Uri.parse(url),
       headers: headers,
     );
-    print(response.statusCode);
     if (response.statusCode == 200) {
       return response.bodyBytes; // Blob data
     } else {
@@ -486,7 +523,6 @@ class HttpRequestHandler {
         Uri.parse(url),
         headers: headers,
       );
-      print("response.body: ${response.body} ${response.statusCode}");
       if (response.statusCode == 200) {
         bool respJson = jsonDecode(response.body);
         return respJson;

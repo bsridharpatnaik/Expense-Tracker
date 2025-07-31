@@ -225,7 +225,6 @@ class _DashboardState extends State<Dashboard> {
       Map<String, dynamic> respJson =
       await HttpRequestHandler(context).transactionGet(dateOrMonth, _searchController.text);
       if (respJson['status'] == 200) {
-        print(respJson);
         setState(() {
           transactions = TransactionResponse.fromJson(respJson);
           totalBalance = transactions.balance.toString();

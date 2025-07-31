@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 class BuildConfig {
   static var serverUrl = '';
   static var serverProdUrl = 'https://www.egcity.in/expense-tracker';
-  // static var serverProdUrl = 'https://sabkainsurance.in/expense-tracker';
-  static var serverTestUrl = 'https://app.nexus360.in/expense-tracker';
+  static var serverTestUrl = 'https://sabkainsurance.in/expense-tracker';
+  // static var serverTestUrl = 'https://app.nexus360.in/expense-tracker';
   static var authorization = '';
   static var username = '';
   static List<String> partyList = [];
