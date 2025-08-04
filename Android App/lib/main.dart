@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bot_toast/bot_toast.dart';
-import 'package:expense_tracker/screens/login.dart';
 import 'package:expense_tracker/screens/spashscreen.dart';
 import 'package:expense_tracker/screens/webview.dart';
 import 'package:expense_tracker/screens/webview_iframe.dart';
