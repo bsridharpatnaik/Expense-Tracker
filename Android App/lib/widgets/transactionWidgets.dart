@@ -563,38 +563,6 @@ class TransactionWidgets {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // DottedBorder(
-                    //   color: Colors.grey,
-                    //   strokeWidth: 1,
-                    //   dashPattern: const [6, 3],
-                    //   child: GestureDetector(
-                    //     onTap: () async {
-                    //       if (BuildConfig.isWeb()) {
-                    //         await _pickFile(setStateModal);
-                    //       } else {
-                    //         await _pickFile(setStateModal);
-                    //       }
-                    //     },
-                    //     child: Container(
-                    //       width: double.infinity,
-                    //       height: 100,
-                    //       color: Colors.grey[200],
-                    //       child: const Center(
-                    //         child: Column(
-                    //           mainAxisAlignment: MainAxisAlignment.center,
-                    //           children: [
-                    //             Icon(Icons.upload_file, size: 40, color: Colors.grey),
-                    //             Text(
-                    //               'Browse Files\nJPG, PNG, PDF, EXCEL',
-                    //               textAlign: TextAlign.center,
-                    //               style: TextStyle(color: Colors.grey),
-                    //             ),
-                    //           ],
-                    //         ),
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
                     DottedBorder(
                       color: Colors.grey,
                       strokeWidth: 1,
@@ -602,9 +570,9 @@ class TransactionWidgets {
                       child: GestureDetector(
                         onTap: () async {
                           if (BuildConfig.isWeb()) {
-                            await _pickImageFromCameraWeb(setStateModal);
+                            await _pickFile(setStateModal);
                           } else {
-                            await _pickImageFromCamera(setStateModal);
+                            await _pickFile(setStateModal);
                           }
                         },
                         child: Container(
@@ -615,9 +583,9 @@ class TransactionWidgets {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.camera_alt, size: 40, color: Colors.grey),
+                                Icon(Icons.upload_file, size: 40, color: Colors.grey),
                                 Text(
-                                  'Capture from Camera\nJPG, PNG',
+                                  'Browse Files\nJPG, PNG, PDF, EXCEL',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(color: Colors.grey),
                                 ),
@@ -627,6 +595,38 @@ class TransactionWidgets {
                         ),
                       ),
                     ),
+                    // DottedBorder(
+                    //   color: Colors.grey,
+                    //   strokeWidth: 1,
+                    //   dashPattern: const [6, 3],
+                    //   child: GestureDetector(
+                    //     onTap: () async {
+                    //       if (BuildConfig.isWeb()) {
+                    //         await _pickImageFromCameraWeb(setStateModal);
+                    //       } else {
+                    //         await _pickImageFromCamera(setStateModal);
+                    //       }
+                    //     },
+                    //     child: Container(
+                    //       width: double.infinity,
+                    //       height: 100,
+                    //       color: Colors.grey[200],
+                    //       child: const Center(
+                    //         child: Column(
+                    //           mainAxisAlignment: MainAxisAlignment.center,
+                    //           children: [
+                    //             Icon(Icons.camera_alt, size: 40, color: Colors.grey),
+                    //             Text(
+                    //               'Capture from Camera\nJPG, PNG',
+                    //               textAlign: TextAlign.center,
+                    //               style: TextStyle(color: Colors.grey),
+                    //             ),
+                    //           ],
+                    //         ),
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
                     const SizedBox(height: 5),
                     if (_pickedFiles.isNotEmpty) buildFileList(),
                     if (fileMaps.isNotEmpty) buildFileMapsList(),

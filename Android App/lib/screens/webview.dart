@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:expense_tracker/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-
 import '../handlers/http_request_handler.dart';
 import 'login.dart';
 
@@ -25,7 +24,6 @@ class _WebViewPageState extends State<WebViewPage> {
     Timer(const Duration(seconds: 2), () {
       isLoaded = true;
       getUserStatus();
-      setState(() {});
     });
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -47,9 +45,8 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 
   getUserStatus() async {
-    setState(() async {
-      userStatus = await HttpRequestHandler(context).getUserStatus();
-    });
+    userStatus = await HttpRequestHandler(context).getUserStatus();
+    setState(() {});
   }
 
   @override
