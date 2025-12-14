@@ -2,8 +2,8 @@ import 'dart:html' as html;
 import 'dart:ui_web' as ui_web; // <--- Changed import
 import 'package:flutter/material.dart';
 
-import '../handlers/http_request_handler.dart'; // Assuming this exists
-import 'login.dart'; // Assuming this exists
+import 'package:expense_tracker/handlers/http_request_handler.dart'; // Assuming this exists
+import 'package:expense_tracker/screens/login.dart'; // Assuming this exists
 
 class WebViewIframePage extends StatefulWidget {
   const WebViewIframePage({super.key});

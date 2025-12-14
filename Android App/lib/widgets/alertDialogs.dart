@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../handlers/http_request_handler.dart';
+import 'package:expense_tracker/handlers/http_request_handler.dart';
 
 class AlertDialogs {
   static Future<void> showConfirmationDialog({

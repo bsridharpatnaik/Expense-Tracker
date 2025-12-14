@@ -1,3 +1,5 @@
+import 'package:expense_tracker/models/transactionModel.dart';
+
 class GroupedSummary {
   int carryForward;
   int totalIncome;
@@ -85,93 +87,6 @@ class DailySummary {
       'expenseTransactions':
       expenseTransactions.map((e) => e.toJson()).toList(),
       'balance': balance,
-    };
-  }
-}
-
-class Transaction {
-  int id;
-  String date;
-  String creationDate;
-  String modificationDate;
-  String title;
-  String party;
-  int amount;
-  String transactionType;
-  String? description;
-  List<FileInfo> fileInfos;
-
-  Transaction({
-    required this.id,
-    required this.date,
-    required this.creationDate,
-    required this.modificationDate,
-    required this.title,
-    required this.party,
-    required this.amount,
-    required this.transactionType,
-    this.description,
-    required this.fileInfos,
-  });
-
-  factory Transaction.fromJson(Map<String, dynamic> json) {
-    return Transaction(
-      id: json['id'] ?? 0,
-      date: json['date'] ?? '',
-      creationDate: json['creationDate'] ?? '',
-      modificationDate: json['modificationDate'] ?? '',
-      title: json['title'] ?? '',
-      party: json['party'] ?? '',
-      amount: (json['amount'] ?? 0).toInt(),
-      transactionType: json['transactionType'] ?? '',
-      description: json['description'],
-      fileInfos: (json['fileInfos'] as List?)
-          ?.map((e) => FileInfo.fromJson(e))
-          .toList() ??
-          [],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'date': date,
-      'creationDate': creationDate,
-      'modificationDate': modificationDate,
-      'title': title,
-      'party': party,
-      'amount': amount,
-      'transactionType': transactionType,
-      'description': description,
-      'fileInfos': fileInfos.map((e) => e.toJson()).toList(),
-    };
-  }
-}
-
-class FileInfo {
-  String fileUuid;
-  String filename;
-  String uploadDate;
-
-  FileInfo({
-    required this.fileUuid,
-    required this.filename,
-    required this.uploadDate,
-  });
-
-  factory FileInfo.fromJson(Map<String, dynamic> json) {
-    return FileInfo(
-      fileUuid: json['fileUuid'] ?? '',
-      filename: json['filename'] ?? '',
-      uploadDate: json['uploadDate'] ?? '',
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'fileUuid': fileUuid,
-      'filename': filename,
-      'uploadDate': uploadDate,
     };
   }
 }

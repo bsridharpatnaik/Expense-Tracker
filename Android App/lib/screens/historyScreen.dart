@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../constants.dart';
-import '../handlers/http_request_handler.dart';
-import '../models/historyModel.dart';
+import 'package:expense_tracker/constants.dart';
+import 'package:expense_tracker/handlers/http_request_handler.dart';
+import 'package:expense_tracker/models/historyModel.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});

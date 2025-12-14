@@ -7,10 +7,10 @@ import 'package:expense_tracker/screens/webview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import '../build_config.dart';
-import '../handlers/SharedPreferencesHandler.dart';
-import '../handlers/http_request_handler.dart';
-import 'dashboard/dashboard.dart';
+import 'package:expense_tracker/build_config.dart';
+import 'package:expense_tracker/handlers/SharedPreferencesHandler.dart';
+import 'package:expense_tracker/handlers/http_request_handler.dart';
+import 'package:expense_tracker/screens/dashboard/dashboard.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

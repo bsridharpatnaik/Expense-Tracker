@@ -1,19 +1,21 @@
 import 'package:expense_tracker/screens/dashboard/tabs/dateWiseTab.dart';
 import 'package:expense_tracker/screens/dashboard/tabs/monthlyGroupTab.dart';
 import 'package:expense_tracker/widgets/transactionWidgets.dart';
+import 'package:expense_tracker/widgets/notesWidgets.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:month_picker_dialog/month_picker_dialog.dart';
-import '../../build_config.dart';
-import '../../constants.dart';
-import '../../handlers/createTransactionPdf.dart';
-import '../../handlers/http_request_handler.dart';
-import '../../models/groupedSummaryModel.dart';
-import '../../models/transactionModel.dart';
-import '../documentationVaultScreen.dart';
-import '../historyScreen.dart';
-import '../login.dart';
-import '../webview.dart';
+import 'package:expense_tracker/build_config.dart';
+import 'package:expense_tracker/constants.dart';
+import 'package:expense_tracker/handlers/createTransactionPdf.dart';
+import 'package:expense_tracker/handlers/http_request_handler.dart';
+import 'package:expense_tracker/models/groupedSummaryModel.dart';
+import 'package:expense_tracker/models/transactionModel.dart';
+import 'package:expense_tracker/models/noteModel.dart';
+import 'package:expense_tracker/screens/documentationVaultScreen.dart';
+import 'package:expense_tracker/screens/historyScreen.dart';
+import 'package:expense_tracker/screens/login.dart';
+import 'package:expense_tracker/screens/webview.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -23,7 +25,7 @@ class Dashboard extends StatefulWidget {
 }
 
 enum Tab { calendar, month, day }
-enum AppBarMenuItems { pdfExport, documentationVault, history, logout }
+enum AppBarMenuItems { pdfExport, documentationVault, history, notes, logout }
 enum TransactionTab { expenses, income }
 
 class _DashboardState extends State<Dashboard> {
@@ -35,6 +37,7 @@ class _DashboardState extends State<Dashboard> {
   String formattedEndDate = '';
   TransactionResponse transactions = TransactionResponse.fromJson({});
   GroupedSummary groupedTransactions = GroupedSummary.fromJson({});
+  List<Note> notes = [];
   List<String> partyList = ['Option 1', 'Option 2', 'Option 3'];
   String totalBalance = '';
   String totalIncome = '';
@@ -49,6 +52,8 @@ class _DashboardState extends State<Dashboard> {
   bool _isSearching = false;
   TextEditingController _searchController = TextEditingController();
   bool isLoading = true;
+  DayViewTab? dayViewTabToShow;
+  DayViewTab currentDayViewTab = DayViewTab.transactions;
 
   @override
   void initState() {
@@ -82,10 +87,39 @@ class _DashboardState extends State<Dashboard> {
     setState(() {}); // Rebuild the UI after refreshing data
   }
 
+  notesGet() async {
+    print("📝 [DASHBOARD] notesGet called - selectedTab: $selectedTab");
+    if(selectedTab == Tab.day){
+      String date = DateFormat('yyyy-MM-dd').format(selectedDate);
+      print("📝 [DASHBOARD] notesGet - Fetching notes for date: $date");
+      Map<String, dynamic> respJson =
+      await HttpRequestHandler(context).getNotesByDate(date);
+      if (respJson['status'] == 200) {
+        setState(() {
+          NotesResponse notesResponse = NotesResponse.fromJson(respJson);
+          notes = notesResponse.notes;
+          print("📝 [DASHBOARD] notesGet SUCCESS - Loaded ${notes.length} notes");
+        });
+      } else {
+        print("📝 [DASHBOARD] notesGet FAILED - Status: ${respJson['status']}");
+        setState(() {
+          notes = [];
+        });
+      }
+    } else {
+      print("📝 [DASHBOARD] notesGet - Not in day view, clearing notes");
+      setState(() {
+        notes = [];
+      });
+    }
+  }
+
   void switchToDayTab(DateTime date) {
     setState(() {
       selectedTab = Tab.day;
       selectedDate = date; // Update the variable
+      currentDayViewTab = DayViewTab.transactions;
+      dayViewTabToShow = null; // Reset to default (transactions)
       transactionGet();
     });
   }
@@ -233,6 +267,7 @@ class _DashboardState extends State<Dashboard> {
           CF = transactions.carryForward.toString();
         });
       }
+      await notesGet();
     }
     if(selectedTab == Tab.month){
       String dateOrMonth = DateFormat('yyyy-MM').format(selectedDate);
@@ -249,6 +284,7 @@ class _DashboardState extends State<Dashboard> {
           totalExpense = groupedTransactions.totalExpense.toString();
           totalIncome = groupedTransactions.totalIncome.toString();
           CF = groupedTransactions.carryForward.toString();
+          notes = [];
         });
       }
     }
@@ -264,6 +300,7 @@ class _DashboardState extends State<Dashboard> {
           totalExpense = groupedTransactions.totalExpense.toString();
           totalIncome = groupedTransactions.totalIncome.toString();
           CF = groupedTransactions.carryForward.toString();
+          notes = [];
         });
       }
     }
@@ -466,6 +503,14 @@ class _DashboardState extends State<Dashboard> {
                         if(item == AppBarMenuItems.pdfExport){
                           createPdf();
                         }
+                        if(item == AppBarMenuItems.notes){
+                          setState(() {
+                            selectedTab = Tab.day;
+                            reinitializeDates();
+                            dayViewTabToShow = DayViewTab.notes;
+                          });
+                          transactionGet();
+                        }
                       });
                     },
                     itemBuilder: (BuildContext context) => <PopupMenuEntry<AppBarMenuItems>>[
@@ -539,6 +584,8 @@ class _DashboardState extends State<Dashboard> {
                                   setState(() {
                                     reinitializeDates();
                                     selectedTab = Tab.day;
+                                    currentDayViewTab = DayViewTab.transactions;
+                                    dayViewTabToShow = null;
                                     transactionGet();
                                   });
                                 },
@@ -560,6 +607,8 @@ class _DashboardState extends State<Dashboard> {
                                   setState(() {
                                     reinitializeDates();
                                     selectedTab = Tab.month;
+                                    currentDayViewTab = DayViewTab.transactions;
+                                    dayViewTabToShow = null;
                                     transactionGet();
                                   });
                                 },
@@ -581,6 +630,8 @@ class _DashboardState extends State<Dashboard> {
                                   setState(() {
                                     reinitializeDates();
                                     selectedTab = Tab.calendar;
+                                    currentDayViewTab = DayViewTab.transactions;
+                                    dayViewTabToShow = null;
                                     transactionGet();
                                   });
                                 },
@@ -815,9 +866,18 @@ class _DashboardState extends State<Dashboard> {
                     ),
                     const SizedBox(height: 10),
                     if (selectedTab == Tab.day)
-                      SizedBox(
-                          width: MediaQuery.of(context).size.width,
-                          child: DayWiseTab(transactions: transactions, onRefresh: onRefresh,)
+                      DayWiseTab(
+                        transactions: transactions, 
+                        notes: notes, 
+                        onRefresh: onRefresh, 
+                        selectedDate: selectedDate,
+                        initialTab: dayViewTabToShow ?? currentDayViewTab,
+                        onTabChanged: (DayViewTab tab) {
+                          setState(() {
+                            currentDayViewTab = tab;
+                            dayViewTabToShow = null; // Reset after initial set
+                          });
+                        },
                       ),
                     if (selectedTab != Tab.day)
                       SizedBox(
@@ -834,13 +894,26 @@ class _DashboardState extends State<Dashboard> {
           visible: selectedTab == Tab.day,
           child: FloatingActionButton(
             onPressed: () {
-              TransactionWidgets(onRefresh,context).addTransactionSheet(null, selectedDate);
+              if (currentDayViewTab == DayViewTab.notes) {
+                // Add Note
+                NotesWidgets(onRefresh, context).addNoteSheet(null, selectedDate);
+              } else {
+                // Add Transaction
+                TransactionWidgets(onRefresh, context).addTransactionSheet(null, selectedDate);
+              }
             },
-            backgroundColor: Colors.green,
-            child: const Icon(
-              Icons.add,
+            backgroundColor: currentDayViewTab == DayViewTab.notes 
+                ? Constants.primary 
+                : Colors.green,
+            child: Icon(
+              currentDayViewTab == DayViewTab.notes 
+                  ? Icons.note_add 
+                  : Icons.add,
               color: Colors.white,
             ),
+            tooltip: currentDayViewTab == DayViewTab.notes 
+                ? "Add Note" 
+                : "Add Transaction",
           ),
         ),
       ),

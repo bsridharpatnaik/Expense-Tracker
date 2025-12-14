@@ -2,14 +2,14 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bot_toast/bot_toast.dart';
-import 'package:expense_tracker/screens/spashscreen.dart';
+import 'package:expense_tracker/screens/splashscreen.dart';
 import 'package:expense_tracker/screens/webview.dart';
 import 'package:expense_tracker/screens/webview_iframe.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-import 'build_config.dart';
-import 'handlers/SharedPreferencesHandler.dart';
+import 'package:expense_tracker/build_config.dart';
+import 'package:expense_tracker/handlers/SharedPreferencesHandler.dart';
 
 void main() {
   runApp(const MyApp());

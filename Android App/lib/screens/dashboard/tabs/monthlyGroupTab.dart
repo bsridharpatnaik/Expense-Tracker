@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../constants.dart';
-import '../../../models/groupedSummaryModel.dart';
-import '../../../utils/dateTimeFormatter.dart';
+import 'package:expense_tracker/constants.dart';
+import 'package:expense_tracker/models/groupedSummaryModel.dart';
+import 'package:expense_tracker/models/transactionModel.dart';
+import 'package:expense_tracker/utils/dateTimeFormatter.dart';
 
 class MonthlyGroupTab extends StatefulWidget {
   final GroupedSummary transactions;

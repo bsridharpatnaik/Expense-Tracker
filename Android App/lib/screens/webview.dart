@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:expense_tracker/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import '../handlers/http_request_handler.dart';
-import 'login.dart';
+import 'package:expense_tracker/handlers/http_request_handler.dart';
+import 'package:expense_tracker/screens/login.dart';
 
 class WebViewPage extends StatefulWidget {
   @override

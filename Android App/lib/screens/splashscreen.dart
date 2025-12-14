@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../constants.dart';
+import 'package:expense_tracker/constants.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -38,3 +38,5 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
+
+

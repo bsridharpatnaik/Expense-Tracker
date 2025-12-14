@@ -7,13 +7,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import '../build_config.dart';
-import '../constants.dart';
-import '../utils/dateTimeFormatter.dart';
-import '../handlers/http_request_handler.dart';
-import '../models/transactionModel.dart';
-import 'alertDialogs.dart';
-import 'blobDialog.dart';
+import 'package:expense_tracker/build_config.dart';
+import 'package:expense_tracker/constants.dart';
+import 'package:expense_tracker/utils/dateTimeFormatter.dart';
+import 'package:expense_tracker/handlers/http_request_handler.dart';
+import 'package:expense_tracker/models/transactionModel.dart';
+import 'package:expense_tracker/widgets/alertDialogs.dart';
+import 'package:expense_tracker/widgets/blobDialog.dart';
 import 'package:camera/camera.dart';
 
 class TransactionWidgets {
@@ -564,9 +564,11 @@ class TransactionWidgets {
                     ),
                     const SizedBox(height: 8),
                     DottedBorder(
-                      color: Colors.grey,
-                      strokeWidth: 1,
-                      dashPattern: const [6, 3],
+                      options: RectDottedBorderOptions(
+                        color: Colors.grey,
+                        strokeWidth: 1,
+                        dashPattern: const [6, 3],
+                      ),
                       child: GestureDetector(
                         onTap: () async {
                           if (BuildConfig.isWeb()) {

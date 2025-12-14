@@ -8,12 +8,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
-import '../build_config.dart';
-import '../constants.dart';
-import '../handlers/http_request_handler.dart';
-import '../handlers/notification_handler.dart';
-import '../models/folderModel.dart';
-import '../widgets/blobDialog.dart';
+import 'package:expense_tracker/build_config.dart';
+import 'package:expense_tracker/constants.dart';
+import 'package:expense_tracker/handlers/http_request_handler.dart';
+import 'package:expense_tracker/handlers/notification_handler.dart';
+import 'package:expense_tracker/models/folderModel.dart';
+import 'package:expense_tracker/widgets/blobDialog.dart';
 
 class DocumentationVault extends StatefulWidget {
   final String folderId;
@@ -501,9 +501,11 @@ class _DocumentationVaultState extends State<DocumentationVault> {
                         height: 15,
                       ),
                       DottedBorder(
-                        color: Colors.grey,
-                        strokeWidth: 1,
-                        dashPattern: const [6, 3],
+                        options: const RectDottedBorderOptions(
+                          color: Colors.grey,
+                          strokeWidth: 1,
+                          dashPattern: [6, 3],
+                        ),
                         child: GestureDetector(
                           onTap: () {
                             _pickFile(setStateModal);

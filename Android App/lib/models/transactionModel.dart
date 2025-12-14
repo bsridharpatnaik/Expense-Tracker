@@ -24,18 +24,18 @@ class Transaction {
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
-    var fileInfosFromJson = json['fileInfos'] as List;
+    var fileInfosFromJson = json['fileInfos'] as List? ?? [];
     List<FileInfo> fileInfosList = fileInfosFromJson.map((i) => FileInfo.fromJson(i)).toList();
 
     return Transaction(
-      id: json['id'],
-      date: json['date'],
-      creationDate: json['creationDate'],
-      modificationDate: json['modificationDate'],
-      title: json['title'],
-      party: json['party'],
-      amount: json['amount'],
-      transactionType: json['transactionType'],
+      id: json['id'] ?? 0,
+      date: json['date'] ?? '',
+      creationDate: json['creationDate'] ?? '',
+      modificationDate: json['modificationDate'] ?? '',
+      title: json['title'] ?? '',
+      party: json['party'] ?? '',
+      amount: json['amount'] ?? 0,
+      transactionType: json['transactionType'] ?? '',
       description: json['description'],
       fileInfos: fileInfosList,
     );
